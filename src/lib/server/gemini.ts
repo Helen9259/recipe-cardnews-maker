@@ -38,8 +38,9 @@ function enqueue<T>(task: () => Promise<T>): Promise<T> {
 // 429(RESOURCE_EXHAUSTED) 재시도: 에러 바디의 RetryInfo.retryDelay(예: "35s")를
 // 읽어서 그만큼 기다렸다가 재시도한다. 값이 없으면 지수 백오프로 대체한다.
 // ---------------------------------------------------------------------------
-const MAX_RETRIES = 5;
+const MAX_RETRIES = 8;
 const FALLBACK_BACKOFF_MS = 15000;
+const MAX_BACKOFF_MS = 90000;
 
 function parseRetryDelayMs(errorBodyText: string): number | null {
   try {
@@ -74,11 +75,21 @@ async function fetchGeminiWithRetry(body: object, apiKey: string): Promise<unkno
     const errText = await res.text();
 
     if (res.status === 429 && attempt < MAX_RETRIES) {
-      const retryMs = parseRetryDelayMs(errText) ?? FALLBACK_BACKOFF_MS * 2 ** attempt;
+      const retryMs = Math.min(
+        MAX_BACKOFF_MS,
+        parseRetryDelayMs(errText) ?? FALLBACK_BACKOFF_MS * 2 ** attempt
+      );
       attempt++;
       console.warn(`[gemini] 429 응답, ${retryMs}ms 대기 후 재시도 (${attempt}/${MAX_RETRIES})`);
       await sleep(retryMs + 500);
       continue;
+    }
+
+    if (res.status === 429) {
+      console.error(`[gemini] 429 재시도(${MAX_RETRIES}회) 모두 실패:`, errText.slice(0, 800));
+      throw new Error(
+        "Gemini 무료 티어 요청 한도를 초과했어요. 1~2분 정도 기다렸다가 다시 시도해주세요."
+      );
     }
 
     throw new Error(`Gemini API 호출 실패 (${res.status}): ${errText.slice(0, 500)}`);
