@@ -69,7 +69,7 @@ export default function RecommendPage() {
 
       {loading ? (
         <div className="flex justify-center">
-          <AiLoadingIndicator label="인기 레시피를 리서치하고 있어요" estimatedSeconds={35} />
+          <AiLoadingIndicator label="인기 레시피를 리서치하고 있어요" estimatedSeconds={90} />
         </div>
       ) : error ? (
         <div className="flex flex-col items-center gap-3 py-16 text-center">

@@ -5,6 +5,112 @@ const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models
 
 type GeminiPart = { text: string } | { fileData: { fileUri: string; mimeType?: string } };
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// ---------------------------------------------------------------------------
+// 요청 큐: 무료 티어 RPM 제한 때문에 Gemini 호출은 한 번에 하나씩, 최소 간격을
+// 두고 순서대로 나간다. 같은 Node 프로세스 안에서만 유효한 in-memory 큐라서
+// (서버리스 인스턴스가 새로 뜨면 초기화됨) 완벽한 전역 레이트리밋은 아니지만
+// 개인용 도구에서 "한꺼번에 몰리는" 문제를 막기엔 충분하다.
+// ---------------------------------------------------------------------------
+const MIN_REQUEST_INTERVAL_MS = 13000; // 12~15초 사이 간격
+let requestQueue: Promise<void> = Promise.resolve();
+let lastRequestStartedAt = 0;
+
+function enqueue<T>(task: () => Promise<T>): Promise<T> {
+  const result = requestQueue.then(async () => {
+    const wait = Math.max(0, lastRequestStartedAt + MIN_REQUEST_INTERVAL_MS - Date.now());
+    if (wait > 0) await sleep(wait);
+    lastRequestStartedAt = Date.now();
+    return task();
+  });
+  // 큐 체인은 실패해도 끊기면 안 되므로 성공/실패 상관없이 다음 작업으로 이어지게 한다
+  requestQueue = result.then(
+    () => undefined,
+    () => undefined
+  );
+  return result;
+}
+
+// ---------------------------------------------------------------------------
+// 429(RESOURCE_EXHAUSTED) 재시도: 에러 바디의 RetryInfo.retryDelay(예: "35s")를
+// 읽어서 그만큼 기다렸다가 재시도한다. 값이 없으면 지수 백오프로 대체한다.
+// ---------------------------------------------------------------------------
+const MAX_RETRIES = 5;
+const FALLBACK_BACKOFF_MS = 15000;
+
+function parseRetryDelayMs(errorBodyText: string): number | null {
+  try {
+    const parsed = JSON.parse(errorBodyText);
+    const details = parsed?.error?.details;
+    if (Array.isArray(details)) {
+      for (const detail of details) {
+        if (typeof detail?.retryDelay === "string") {
+          const match = detail.retryDelay.match(/^(\d+(?:\.\d+)?)s$/);
+          if (match) return Math.ceil(parseFloat(match[1]) * 1000);
+        }
+      }
+    }
+  } catch {
+    // JSON 파싱 실패 시 아래 정규식 폴백으로
+  }
+  const match = errorBodyText.match(/retryDelay"?\s*:\s*"?(\d+(?:\.\d+)?)s/);
+  return match ? Math.ceil(parseFloat(match[1]) * 1000) : null;
+}
+
+async function fetchGeminiWithRetry(body: object, apiKey: string): Promise<unknown> {
+  let attempt = 0;
+  while (true) {
+    const res = await fetch(`${GEMINI_ENDPOINT}?key=${apiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    if (res.ok) return res.json();
+
+    const errText = await res.text();
+
+    if (res.status === 429 && attempt < MAX_RETRIES) {
+      const retryMs = parseRetryDelayMs(errText) ?? FALLBACK_BACKOFF_MS * 2 ** attempt;
+      attempt++;
+      console.warn(`[gemini] 429 응답, ${retryMs}ms 대기 후 재시도 (${attempt}/${MAX_RETRIES})`);
+      await sleep(retryMs + 500);
+      continue;
+    }
+
+    throw new Error(`Gemini API 호출 실패 (${res.status}): ${errText.slice(0, 500)}`);
+  }
+}
+
+async function callGeminiJSON(parts: GeminiPart[], schema: object): Promise<unknown> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY가 설정되어 있지 않습니다. .env.local을 확인해주세요.");
+  }
+
+  return enqueue(async () => {
+    const data = (await fetchGeminiWithRetry(
+      {
+        contents: [{ role: "user", parts }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: schema,
+        },
+      },
+      apiKey
+    )) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
+
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) {
+      throw new Error("Gemini 응답에서 결과 텍스트를 찾을 수 없습니다.");
+    }
+    return JSON.parse(text);
+  });
+}
+
 const RECIPE_JSON_SCHEMA = {
   type: "object",
   properties: {
@@ -25,37 +131,6 @@ const RECIPE_JSON_SCHEMA = {
   },
   required: ["title", "servings", "ingredients", "steps"],
 };
-
-async function callGeminiJSON(parts: GeminiPart[], schema: object): Promise<unknown> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error("GEMINI_API_KEY가 설정되어 있지 않습니다. .env.local을 확인해주세요.");
-  }
-
-  const res = await fetch(`${GEMINI_ENDPOINT}?key=${apiKey}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{ role: "user", parts }],
-      generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema: schema,
-      },
-    }),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Gemini API 호출 실패 (${res.status}): ${errText.slice(0, 500)}`);
-  }
-
-  const data = await res.json();
-  const text: string | undefined = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) {
-    throw new Error("Gemini 응답에서 결과 텍스트를 찾을 수 없습니다.");
-  }
-  return JSON.parse(text);
-}
 
 interface RecipeSourceMeta {
   sourceType: SourceType;
@@ -136,22 +211,38 @@ export async function structureRecipeFromYoutubeVideo(youtubeUrl: string, meta: 
   return toRecipe(parsed, meta);
 }
 
-const CATEGORY_SCHEMA = {
+const CATEGORIES_SCHEMA = {
   type: "object",
-  properties: { category: { type: "string" } },
-  required: ["category"],
+  properties: {
+    categories: { type: "array", items: { type: "string" } },
+  },
+  required: ["categories"],
 };
 
-/** 유튜브 검색 결과 제목/설명을 보고 요리 카테고리 태그 하나를 붙인다 (예: '한식', '베이킹', '분식') */
-export async function classifyRecipeCategory(title: string, description: string): Promise<string> {
-  const prompt = [
-    "다음 요리 영상의 제목과 설명을 보고 어울리는 카테고리 태그를 한 단어로 골라줘.",
-    "예시 카테고리: 한식, 양식, 중식, 일식, 분식, 베이킹, 디저트, 안주, 다이어트, 간편식",
-    "",
-    `제목: ${title}`,
-    `설명: ${description.slice(0, 500)}`,
-  ].join("\n");
+export interface VideoForClassification {
+  title: string;
+  description: string;
+}
 
-  const parsed = (await callGeminiJSON([{ text: prompt }], CATEGORY_SCHEMA)) as { category: string };
-  return parsed.category || "기타";
+/**
+ * 여러 영상의 카테고리를 한 번의 Gemini 호출로 한꺼번에 분류한다 (영상마다 따로 호출하지 않음).
+ * 응답 categories 배열은 입력 순서와 1:1로 대응해야 한다.
+ */
+export async function classifyRecipeCategories(videos: VideoForClassification[]): Promise<string[]> {
+  if (videos.length === 0) return [];
+
+  const prompt = [
+    "아래는 요리 영상 목록이야. 각 영상의 제목과 설명을 보고 어울리는 카테고리 태그를 한 단어로 붙여줘.",
+    "예시 카테고리: 한식, 양식, 중식, 일식, 분식, 베이킹, 디저트, 안주, 다이어트, 간편식",
+    `결과 categories 배열은 반드시 아래 목록과 같은 순서로 ${videos.length}개를 반환해줘.`,
+    "",
+    ...videos.map(
+      (v, idx) => `[${idx}] 제목: ${v.title}\n설명: ${v.description.slice(0, 300)}`
+    ),
+  ].join("\n\n");
+
+  const parsed = (await callGeminiJSON([{ text: prompt }], CATEGORIES_SCHEMA)) as { categories?: string[] };
+  const categories = Array.isArray(parsed.categories) ? parsed.categories : [];
+
+  return videos.map((_, idx) => categories[idx] || "기타");
 }

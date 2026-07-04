@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { searchPopularCookingVideos } from "@/lib/server/youtube";
-import { classifyRecipeCategory } from "@/lib/server/gemini";
+import { classifyRecipeCategories } from "@/lib/server/gemini";
 import { structureRecipeFromYoutubeDetails, youtubeWatchUrl } from "@/lib/server/extractRecipe";
 import { RecommendedRecipe } from "@/types/recipe";
+
+// Gemini 요청 큐(최소 12~15초 간격) 때문에 이 라우트는 오래 걸릴 수 있어 넉넉하게 잡는다.
+// Vercel Hobby 플랜은 60초로 강제 상한되니 README의 "알려진 제한사항" 참고.
+export const maxDuration = 120;
 
 const RESULT_COUNT = 5;
 
@@ -26,17 +30,21 @@ export async function GET() {
       return NextResponse.json({ error: "추천할 만한 영상을 찾지 못했습니다." }, { status: 404 });
     }
 
+    // 영상마다 따로 분류하지 않고 한 번의 Gemini 호출로 전체 카테고리를 매긴다
+    const categories = await classifyRecipeCategories(
+      top.map((video) => ({ title: video.title, description: video.description }))
+    );
+
+    // structureRecipeFromYoutubeDetails 안의 Gemini 호출은 모두 같은 요청 큐를 거치므로
+    // Promise.all로 동시에 시작해도 실제로는 최소 간격을 두고 순서대로 나간다
     const recommendations = await Promise.all(
-      top.map(async (video): Promise<RecommendedRecipe> => {
+      top.map(async (video, idx): Promise<RecommendedRecipe> => {
         const sourceUrl = youtubeWatchUrl(video.videoId);
-        const [recipe, category] = await Promise.all([
-          structureRecipeFromYoutubeDetails(video, sourceUrl),
-          classifyRecipeCategory(video.title, video.description),
-        ]);
+        const recipe = await structureRecipeFromYoutubeDetails(video, sourceUrl);
 
         return {
           ...recipe,
-          category,
+          category: categories[idx] || "기타",
           viewCount: video.viewCount,
           publishedAt: video.publishedAt,
         };

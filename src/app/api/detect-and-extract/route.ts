@@ -5,6 +5,9 @@ import { fetchBlogText } from "@/lib/server/blog";
 import { structureRecipeFromText } from "@/lib/server/gemini";
 import { structureRecipeFromYoutubeDetails } from "@/lib/server/extractRecipe";
 
+// 429 재시도 대기 때문에 오래 걸릴 수 있어 넉넉하게 잡는다. (Vercel Hobby 플랜은 60초 강제 상한)
+export const maxDuration = 60;
+
 export async function POST(request: Request) {
   try {
     const { url } = (await request.json()) as { url?: string };
