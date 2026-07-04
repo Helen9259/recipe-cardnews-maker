@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { classifyRecipeCategories } from "@/lib/server/gemini";
-import { structureRecipeFromYoutubeDetails } from "@/lib/server/extractRecipe";
+import { structureRecipeWithCategoryFromYoutubeDetails } from "@/lib/server/extractRecipe";
+import { getOrCompute } from "@/lib/server/resultCache";
 import { RecommendationCandidate } from "@/types/recommendation";
 import { RecommendedRecipe } from "@/types/recipe";
 
@@ -9,8 +9,9 @@ export const maxDuration = 60;
 
 /**
  * 사용자가 추천 목록에서 후보 하나를 선택했을 때만 호출된다.
- * 카테고리 분류(1개짜리 배열로 classifyRecipeCategories 재사용)와 레시피 구조화를
- * 이 후보 하나에 대해서만 수행한다 — 선택하지 않은 나머지 후보는 Gemini를 전혀 타지 않는다.
+ * 카테고리 분류와 레시피 구조화를 별도 호출로 나누지 않고 한 번의 Gemini 호출로 같이 받는다
+ * (structureRecipeWithCategoryFromYoutubeDetails). 선택하지 않은 나머지 후보는 Gemini를 전혀 타지 않고,
+ * 같은 영상을 다시 선택해도 캐시된 결과를 재사용한다.
  */
 export async function POST(request: Request) {
   try {
@@ -19,9 +20,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "candidate가 필요합니다." }, { status: 400 });
     }
 
-    const [categories, recipe] = await Promise.all([
-      classifyRecipeCategories([{ title: candidate.title, description: candidate.description }]),
-      structureRecipeFromYoutubeDetails(
+    const recipe = await getOrCompute(`select:${candidate.videoId}`, () =>
+      structureRecipeWithCategoryFromYoutubeDetails(
         {
           videoId: candidate.videoId,
           title: candidate.title,
@@ -32,12 +32,11 @@ export async function POST(request: Request) {
           publishedAt: candidate.publishedAt,
         },
         candidate.sourceUrl
-      ),
-    ]);
+      )
+    );
 
     const result: RecommendedRecipe = {
       ...recipe,
-      category: categories[0] || "기타",
       viewCount: candidate.viewCount,
       publishedAt: candidate.publishedAt,
     };

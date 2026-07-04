@@ -49,14 +49,24 @@ npm run dev
 
 `/api/recommend-recipes`(목록 진입 시 호출)는 유튜브 검색 결과 메타데이터(제목/썸네일/채널명)만
 반환하고 **Gemini를 전혀 호출하지 않습니다.** 카테고리 분류와 재료/순서 구조화는 사용자가 후보
-중 하나를 실제로 클릭했을 때 `/api/recommend-recipes/select`가 그 영상 하나에 대해서만
-수행합니다 (카테고리 분류는 여러 영상을 한 번에 묶어 호출할 수 있는 `classifyRecipeCategories`를
-1개짜리 배열로 재사용). 그 결과:
+중 하나를 실제로 클릭했을 때 `/api/recommend-recipes/select`가 그 영상 하나에 대해서만 수행합니다.
+카테고리 분류와 레시피 구조화도 별도 호출로 나누지 않고 `structureRecipeWithCategoryFromYoutubeDetails`
+하나의 Gemini 호출에 같이 응답받습니다 (스키마에 `category` 필드를 추가하는 방식). 그 결과:
 
 - 목록 진입 시 Gemini 호출 0회
-- 후보 선택 시에만 Gemini 호출 2회(카테고리 분류 1회 + 레시피 구조화 1회)
+- 후보 선택 시에만 Gemini 호출 **1회**(카테고리+레시피 구조화를 한 번에)
 - 선택하지 않고 넘어간 나머지 후보는 끝까지 Gemini를 타지 않음
 - 같은 후보를 다시 클릭해도 캐시된 결과를 재사용하고 다시 호출하지 않음
+
+### 중복 호출 방지 캐시 & 더블클릭 가드
+
+`src/lib/server/resultCache.ts`는 같은 키(유튜브 videoId, 블로그 URL)로 들어온 요청을
+in-memory Map으로 memoize한다. 진행 중인 요청과 같은 키가 다시 들어오면 새로 계산하지 않고
+**진행 중인 Promise를 그대로 재사용**하고, 이미 끝난 요청이면 그 결과를 재사용해서 Gemini를
+다시 부르지 않는다 — `/api/detect-and-extract`, `/api/recommend-recipes/select` 양쪽에 적용됨.
+같은 서버 인스턴스가 살아있는 동안에만 유효하지만, 더블클릭/중복 제출/뒤로가기 후 같은 URL·영상
+재시도 같은 흔한 낭비를 막아준다. 클라이언트에도 보조적으로 버튼 연타·중복 fetch를 막는 가드를
+추가했다 (`src/app/page.tsx`, `src/app/recommend/page.tsx`).
 
 ## Vercel 배포
 

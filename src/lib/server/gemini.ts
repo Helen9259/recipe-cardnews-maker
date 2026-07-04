@@ -122,49 +122,82 @@ async function callGeminiJSON(parts: GeminiPart[], schema: object): Promise<unkn
   });
 }
 
-const RECIPE_JSON_SCHEMA = {
-  type: "object",
-  properties: {
-    title: { type: "string" },
-    servings: { type: "string" },
-    ingredients: { type: "array", items: { type: "string" } },
-    steps: {
-      type: "array",
-      items: {
-        type: "object",
-        properties: {
-          text: { type: "string" },
-          tip: { type: "string" },
-        },
-        required: ["text"],
+const CATEGORY_EXAMPLES = "한식, 양식, 중식, 일식, 분식, 베이킹, 디저트, 안주, 다이어트, 간편식";
+
+const RECIPE_PROPERTIES = {
+  title: { type: "string" },
+  servings: { type: "string" },
+  ingredients: { type: "array", items: { type: "string" } },
+  steps: {
+    type: "array",
+    items: {
+      type: "object",
+      properties: {
+        text: { type: "string" },
+        tip: { type: "string" },
       },
+      required: ["text"],
     },
   },
+};
+
+const RECIPE_JSON_SCHEMA = {
+  type: "object",
+  properties: RECIPE_PROPERTIES,
   required: ["title", "servings", "ingredients", "steps"],
 };
 
-interface RecipeSourceMeta {
+// AI 추천 레시피 화면에서만 쓰는 스키마: 카테고리 분류를 별도 호출로 하지 않고
+// 레시피 구조화 호출 하나에 얹어서 같이 받는다 (호출 2회 → 1회로 절약)
+const RECIPE_WITH_CATEGORY_JSON_SCHEMA = {
+  type: "object",
+  properties: { ...RECIPE_PROPERTIES, category: { type: "string" } },
+  required: ["title", "servings", "ingredients", "steps", "category"],
+};
+
+export interface RecipeSourceMeta {
   sourceType: SourceType;
   sourceUrl: string;
   sourceName: string;
   thumbnailUrl?: string;
 }
 
-function buildStructurePrompt(rawText: string): string {
-  return [
-    "너는 요리 레시피 정리 전문가야. 아래 텍스트에서 레시피 정보를 추출해서 JSON으로 구조화해줘.",
-    "",
+function buildStructurePrompt(rawText: string, withCategory: boolean): string {
+  const rules = [
     "규칙:",
     "- servings는 '2인분'처럼 사람이 읽기 좋은 형태로 정리",
     "- ingredients는 재료명과 분량을 한 줄로 (예: '대파 1대')",
     "- steps는 조리 순서를 의미 단위로 묶어서 최대 15개 이내로 정리 (사소한 동작은 한 단계로 합치기)",
     "- 각 step의 text는 카드 한 장에 들어갈 만큼 간결하게, tip은 있을 때만 채우기",
     "- 텍스트에 없는 내용은 추측하지 말고 비워두기",
+  ];
+  if (withCategory) {
+    rules.push(`- category는 이 요리에 어울리는 카테고리 태그를 한 단어로 (예시: ${CATEGORY_EXAMPLES})`);
+  }
+
+  return [
+    "너는 요리 레시피 정리 전문가야. 아래 텍스트에서 레시피 정보를 추출해서 JSON으로 구조화해줘.",
+    "",
+    ...rules,
     "",
     "원본 텍스트:",
     "---",
     rawText.slice(0, 20000),
   ].join("\n");
+}
+
+function buildVideoPrompt(withCategory: boolean): string {
+  const rules = [
+    "규칙:",
+    "- servings는 '2인분'처럼 사람이 읽기 좋은 형태로 정리",
+    "- ingredients는 영상에 등장하는 재료명과 분량을 한 줄로",
+    "- steps는 조리 순서를 의미 단위로 묶어서 최대 15개 이내로 정리",
+    "- 각 step의 text는 카드 한 장에 들어갈 만큼 간결하게, tip은 영상 속 팁이 있을 때만 채우기",
+  ];
+  if (withCategory) {
+    rules.push(`- category는 이 요리에 어울리는 카테고리 태그를 한 단어로 (예시: ${CATEGORY_EXAMPLES})`);
+  }
+  return ["이 요리 영상을 보고 레시피 정보를 JSON으로 구조화해줘.", "", ...rules].join("\n");
 }
 
 interface RawStep {
@@ -177,6 +210,7 @@ interface RawRecipeJson {
   servings?: string;
   ingredients?: string[];
   steps?: RawStep[];
+  category?: string;
 }
 
 function toRecipe(parsed: RawRecipeJson, meta: RecipeSourceMeta): Recipe {
@@ -199,61 +233,44 @@ function toRecipe(parsed: RawRecipeJson, meta: RecipeSourceMeta): Recipe {
 }
 
 export async function structureRecipeFromText(rawText: string, meta: RecipeSourceMeta): Promise<Recipe> {
-  const parsed = (await callGeminiJSON([{ text: buildStructurePrompt(rawText) }], RECIPE_JSON_SCHEMA)) as RawRecipeJson;
-  return toRecipe(parsed, meta);
-}
-
-/** 설명란/댓글이 부실한 유튜브 영상을 Gemini에게 직접 보여주고 재료/순서를 추론시킨다 */
-export async function structureRecipeFromYoutubeVideo(youtubeUrl: string, meta: RecipeSourceMeta): Promise<Recipe> {
-  const prompt = [
-    "이 요리 영상을 보고 레시피 정보를 JSON으로 구조화해줘.",
-    "",
-    "규칙:",
-    "- servings는 '2인분'처럼 사람이 읽기 좋은 형태로 정리",
-    "- ingredients는 영상에 등장하는 재료명과 분량을 한 줄로",
-    "- steps는 조리 순서를 의미 단위로 묶어서 최대 15개 이내로 정리",
-    "- 각 step의 text는 카드 한 장에 들어갈 만큼 간결하게, tip은 영상 속 팁이 있을 때만 채우기",
-  ].join("\n");
-
   const parsed = (await callGeminiJSON(
-    [{ fileData: { fileUri: youtubeUrl } }, { text: prompt }],
+    [{ text: buildStructurePrompt(rawText, false) }],
     RECIPE_JSON_SCHEMA
   )) as RawRecipeJson;
   return toRecipe(parsed, meta);
 }
 
-const CATEGORIES_SCHEMA = {
-  type: "object",
-  properties: {
-    categories: { type: "array", items: { type: "string" } },
-  },
-  required: ["categories"],
-};
-
-export interface VideoForClassification {
-  title: string;
-  description: string;
+/** 설명란/댓글이 부실한 유튜브 영상을 Gemini에게 직접 보여주고 재료/순서를 추론시킨다 */
+export async function structureRecipeFromYoutubeVideo(youtubeUrl: string, meta: RecipeSourceMeta): Promise<Recipe> {
+  const parsed = (await callGeminiJSON(
+    [{ fileData: { fileUri: youtubeUrl } }, { text: buildVideoPrompt(false) }],
+    RECIPE_JSON_SCHEMA
+  )) as RawRecipeJson;
+  return toRecipe(parsed, meta);
 }
 
 /**
- * 여러 영상의 카테고리를 한 번의 Gemini 호출로 한꺼번에 분류한다 (영상마다 따로 호출하지 않음).
- * 응답 categories 배열은 입력 순서와 1:1로 대응해야 한다.
+ * AI 추천 레시피 화면 전용: 카테고리 분류 + 레시피 구조화를 한 번의 Gemini 호출로 같이 받는다.
  */
-export async function classifyRecipeCategories(videos: VideoForClassification[]): Promise<string[]> {
-  if (videos.length === 0) return [];
+export async function structureRecipeWithCategoryFromText(
+  rawText: string,
+  meta: RecipeSourceMeta
+): Promise<Recipe & { category: string }> {
+  const parsed = (await callGeminiJSON(
+    [{ text: buildStructurePrompt(rawText, true) }],
+    RECIPE_WITH_CATEGORY_JSON_SCHEMA
+  )) as RawRecipeJson;
+  return { ...toRecipe(parsed, meta), category: parsed.category || "기타" };
+}
 
-  const prompt = [
-    "아래는 요리 영상 목록이야. 각 영상의 제목과 설명을 보고 어울리는 카테고리 태그를 한 단어로 붙여줘.",
-    "예시 카테고리: 한식, 양식, 중식, 일식, 분식, 베이킹, 디저트, 안주, 다이어트, 간편식",
-    `결과 categories 배열은 반드시 아래 목록과 같은 순서로 ${videos.length}개를 반환해줘.`,
-    "",
-    ...videos.map(
-      (v, idx) => `[${idx}] 제목: ${v.title}\n설명: ${v.description.slice(0, 300)}`
-    ),
-  ].join("\n\n");
-
-  const parsed = (await callGeminiJSON([{ text: prompt }], CATEGORIES_SCHEMA)) as { categories?: string[] };
-  const categories = Array.isArray(parsed.categories) ? parsed.categories : [];
-
-  return videos.map((_, idx) => categories[idx] || "기타");
+/** 위와 동일하지만 설명란/댓글이 부실해서 영상을 직접 분석해야 하는 경우 */
+export async function structureRecipeWithCategoryFromYoutubeVideo(
+  youtubeUrl: string,
+  meta: RecipeSourceMeta
+): Promise<Recipe & { category: string }> {
+  const parsed = (await callGeminiJSON(
+    [{ fileData: { fileUri: youtubeUrl } }, { text: buildVideoPrompt(true) }],
+    RECIPE_WITH_CATEGORY_JSON_SCHEMA
+  )) as RawRecipeJson;
+  return { ...toRecipe(parsed, meta), category: parsed.category || "기타" };
 }

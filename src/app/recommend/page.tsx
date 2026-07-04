@@ -32,6 +32,7 @@ export default function RecommendPage() {
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const analyzeRequestId = useRef(0);
+  const inFlightVideoId = useRef<string | null>(null);
 
   const fetchCandidates = useCallback(async () => {
     setLoading(true);
@@ -59,9 +60,11 @@ export default function RecommendPage() {
   async function handleSelect(idx: number) {
     setSelectedIdx(idx);
     const candidate = candidates[idx];
-    if (!candidate || analyzed[candidate.videoId]) return;
+    // 이미 분석된 후보거나, 같은 후보를 향한 요청이 이미 진행 중이면 다시 부르지 않는다
+    if (!candidate || analyzed[candidate.videoId] || inFlightVideoId.current === candidate.videoId) return;
 
     const requestId = ++analyzeRequestId.current;
+    inFlightVideoId.current = candidate.videoId;
     setAnalyzing(true);
     setAnalyzeError(null);
     try {
@@ -79,6 +82,7 @@ export default function RecommendPage() {
       if (requestId !== analyzeRequestId.current) return;
       setAnalyzeError(err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다.");
     } finally {
+      if (inFlightVideoId.current === candidate.videoId) inFlightVideoId.current = null;
       if (requestId === analyzeRequestId.current) setAnalyzing(false);
     }
   }

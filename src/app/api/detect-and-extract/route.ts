@@ -4,6 +4,7 @@ import { fetchVideoDetails, isTextTooThin } from "@/lib/server/youtube";
 import { fetchBlogText } from "@/lib/server/blog";
 import { structureRecipeFromText } from "@/lib/server/gemini";
 import { structureRecipeFromYoutubeDetails } from "@/lib/server/extractRecipe";
+import { getOrCompute } from "@/lib/server/resultCache";
 
 // 429 재시도 대기 때문에 오래 걸릴 수 있어 넉넉하게 잡는다. (Vercel Hobby 플랜은 60초 강제 상한)
 export const maxDuration = 60;
@@ -35,7 +36,11 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "해당 유튜브 영상을 찾을 수 없습니다." }, { status: 404 });
       }
 
-      const recipe = await structureRecipeFromYoutubeDetails(details, parsedUrl.toString());
+      // 같은 영상을 다시 제출하거나(뒤로가기 후 재시도) 더블클릭으로 중복 제출해도
+      // Gemini를 다시 부르지 않고 진행 중이거나 끝난 결과를 재사용한다
+      const recipe = await getOrCompute(`extract:youtube:${videoId}`, () =>
+        structureRecipeFromYoutubeDetails(details, parsedUrl.toString())
+      );
       return NextResponse.json(recipe);
     }
 
@@ -48,11 +53,13 @@ export async function POST(request: Request) {
       );
     }
 
-    const recipe = await structureRecipeFromText(text, {
-      sourceType: "blog",
-      sourceUrl: parsedUrl.toString(),
-      sourceName: blogName,
-    });
+    const recipe = await getOrCompute(`extract:blog:${parsedUrl.toString()}`, () =>
+      structureRecipeFromText(text, {
+        sourceType: "blog",
+        sourceUrl: parsedUrl.toString(),
+        sourceName: blogName,
+      })
+    );
 
     return NextResponse.json(recipe);
   } catch (error) {

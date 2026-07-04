@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageShell } from "@/components/layout/PageShell";
 import { AiLoadingIndicator } from "@/components/layout/AiLoadingIndicator";
@@ -22,12 +22,16 @@ export default function HomePage() {
   const { state, setInputUrl, setProject, setSelectedRecommendation, setCurrentStep } = useAppSession();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const inFlight = useRef(false);
 
   async function handleExtract() {
     if (!state.inputUrl.trim()) {
       setError("유튜브 또는 블로그 URL을 입력해주세요.");
       return;
     }
+    // setLoading은 비동기 렌더라 같은 틱에 두 번 클릭되면 통과될 수 있어 ref로 한 번 더 막는다
+    if (inFlight.current) return;
+    inFlight.current = true;
     setError(null);
     setLoading(true);
     try {
@@ -47,6 +51,7 @@ export default function HomePage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다.");
     } finally {
+      inFlight.current = false;
       setLoading(false);
     }
   }
