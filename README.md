@@ -95,8 +95,8 @@ in-memory Map으로 memoize한다. 진행 중인 요청과 같은 키가 다시 
 ## 폰트
 
 `pretendard`, `@fontsource/noto-sans-kr`, `@noonnu/dos-gothic`는 npm 패키지로 설치되어 자동 적용됩니다.
-BM쿠쿠림체·오케이 딴딴체는 라이선스상 npm 배포가 안 되는 폰트라 저장소에 포함하지 않았습니다.
-눈누(noonnu.cc)에서 받은 폰트 파일을 `public/fonts/bmcucuric.woff2`, `public/fonts/okaydandan.woff2`로
+오케이 딴딴체·꾸블림체는 라이선스상 npm 배포가 안 되는 폰트라 저장소에 포함하지 않았습니다.
+눈누(noonnu.cc)에서 받은 폰트 파일을 `public/fonts/okaydandan.woff2`, `public/fonts/ggubblim.woff2`로
 넣어주면 적용되고, 없으면 자동으로 손글씨 계열 대체 폰트로 표시됩니다 (`public/fonts/README.md` 참고).
 
 ## 알려진 제한사항

@@ -13,8 +13,8 @@ export type MainColor =
 export type FontOption =
   | "pretendard"
   | "notosans"
-  | "bmcucuric"
   | "okaydandan"
+  | "ggubblim"
   | "dosgothic";
 
 export interface RecipeStep {

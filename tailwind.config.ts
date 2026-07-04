@@ -22,8 +22,8 @@ const config: Config = {
       fontFamily: {
         pretendard: ["var(--font-pretendard)", "sans-serif"],
         notosans: ["var(--font-notosans)", "sans-serif"],
-        bmcucuric: ["var(--font-bmcucuric)", "cursive"],
         okaydandan: ["var(--font-okaydandan)", "cursive"],
+        ggubblim: ["var(--font-ggubblim)", "cursive"],
         dosgothic: ["var(--font-dosgothic)", "sans-serif"],
       },
     },
