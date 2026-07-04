@@ -5,11 +5,15 @@ import { CardHtml } from "./CardHtml";
 import { getLine } from "@/lib/cardLines";
 import { FONT_FAMILY_STACK } from "@/lib/fontOptions";
 import { getDarkModeTokens, getIllustrationFilter } from "@/lib/darkMode";
+import { autoFontSize } from "@/lib/autoFontSize";
 import { CARD_WIDTH, ILLUSTRATION_ASPECT } from "@/lib/cardLayout";
 
 const PADDING = 64;
 const ILLUSTRATION_WIDTH = CARD_WIDTH - PADDING * 2;
 const ILLUSTRATION_HEIGHT = ILLUSTRATION_WIDTH / ILLUSTRATION_ASPECT;
+
+const BODY_FONT_SIZE = { min: 24, max: 36, idealChars: 20 };
+const TIP_FONT_SIZE = { min: 18, max: 24, idealChars: 22 };
 
 export function StepsCardSvg({ card, style }: { card: CardNewsCard; style: CardStyle }) {
   const fontFamily = FONT_FAMILY_STACK[style.font];
@@ -67,7 +71,15 @@ export function StepsCardSvg({ card, style }: { card: CardNewsCard; style: CardS
             </span>
           )}
           {body?.text && (
-            <span style={{ fontSize: 34, fontWeight: 300, lineHeight: 1.4, color: body.color, wordBreak: "keep-all" }}>
+            <span
+              style={{
+                fontSize: autoFontSize(body.text, BODY_FONT_SIZE),
+                fontWeight: 300,
+                lineHeight: 1.4,
+                color: body.color,
+                wordBreak: "keep-all",
+              }}
+            >
               {body.text}
             </span>
           )}
@@ -75,7 +87,7 @@ export function StepsCardSvg({ card, style }: { card: CardNewsCard; style: CardS
             <span
               style={{
                 marginTop: 8,
-                fontSize: 22,
+                fontSize: autoFontSize(tip.text, TIP_FONT_SIZE),
                 fontWeight: 400,
                 color: tip.color,
                 borderTop: `1px solid ${tokens.cardBorder}`,

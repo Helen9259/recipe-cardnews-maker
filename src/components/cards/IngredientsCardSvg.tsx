@@ -4,7 +4,10 @@ import { CardCanvas } from "./CardCanvas";
 import { CardHtml } from "./CardHtml";
 import { getLine, getLines } from "@/lib/cardLines";
 import { FONT_FAMILY_STACK } from "@/lib/fontOptions";
+import { autoFontSize } from "@/lib/autoFontSize";
 import { CARD_WIDTH, CARD_HEIGHT } from "@/lib/cardLayout";
+
+const ITEM_FONT_SIZE = { min: 20, max: 32, idealChars: 8 };
 
 function columnCount(itemCount: number): number {
   if (itemCount <= 6) return 1;
@@ -18,6 +21,9 @@ export function IngredientsCardSvg({ card, style }: { card: CardNewsCard; style:
   const subtitle = getLine(card, "subtitle");
   const items = getLines(card, "body");
   const cols = columnCount(items.length);
+  // 항목 하나하나가 아니라 가장 긴 재료 기준으로 통일된 크기를 써야 그리드가 들쭉날쭉하지 않는다
+  const longestItem = items.reduce((longest, item) => (item.text.length > longest.length ? item.text : longest), "");
+  const itemFontSize = autoFontSize(longestItem, ITEM_FONT_SIZE);
 
   return (
     <CardCanvas mode={style.mode} mainColor={style.mainColor}>
@@ -53,7 +59,7 @@ export function IngredientsCardSvg({ card, style }: { card: CardNewsCard; style:
                     flexShrink: 0,
                   }}
                 />
-                <span style={{ fontSize: 30, fontWeight: 300, color: item.color, wordBreak: "keep-all" }}>
+                <span style={{ fontSize: itemFontSize, fontWeight: 300, color: item.color, wordBreak: "keep-all" }}>
                   {item.text}
                 </span>
               </div>

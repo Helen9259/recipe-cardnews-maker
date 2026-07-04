@@ -2,6 +2,8 @@ import { v4 as uuid } from "uuid";
 import { CardNewsCard, CardLine } from "@/types/card";
 import { CardNewsProject } from "@/types/recipe";
 import { getDarkModeTokens } from "@/lib/darkMode";
+import { getCardAccentColor } from "@/lib/cardColors";
+import { splitTitleForTwoTone } from "@/lib/titleSplit";
 
 function line(role: CardLine["role"], text: string, color: string): CardLine {
   return { id: uuid(), role, text, color };
@@ -14,7 +16,15 @@ function line(role: CardLine["role"], text: string, color: string): CardLine {
 export function buildBaseCards(project: CardNewsProject): CardNewsCard[] {
   const { recipe, style, instaAccountName, promoText } = project;
   const tokens = getDarkModeTokens(style.mode);
+  const accent = getCardAccentColor(style.mainColor, style.mode);
   const cards: CardNewsCard[] = [];
+
+  // 제목이 두 줄로 나뉠 만큼 길면 첫 줄은 기본 텍스트색, 둘째 줄은 메인 컬러를 기본값으로 준다.
+  // 색상은 그냥 일반 CardLine.color라서 화면5에서 여전히 줄별로 수동 변경 가능하다.
+  const titleSegments = splitTitleForTwoTone(recipe.title);
+  const titleLines = titleSegments.map((segment, idx) =>
+    line("title", segment, idx === 0 ? tokens.text : accent)
+  );
 
   cards.push({
     id: "cover",
@@ -22,7 +32,7 @@ export function buildBaseCards(project: CardNewsProject): CardNewsCard[] {
     selected: true,
     imageUrl: recipe.thumbnailUrl,
     lines: [
-      line("title", recipe.title, tokens.text),
+      ...titleLines,
       line("subtitle", recipe.sourceName ? `${recipe.sourceName}의 레시피` : "", tokens.subtext),
       line("watermark", instaAccountName ? `@${instaAccountName}` : "", tokens.watermark),
     ],

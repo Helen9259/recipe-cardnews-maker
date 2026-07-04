@@ -162,6 +162,12 @@ export interface RecipeSourceMeta {
   thumbnailUrl?: string;
 }
 
+// steps/tip의 말투 규칙. 텍스트 기반이든 영상 기반이든 동일하게 적용해야 해서 공용으로 뺐다.
+const TONE_RULES = [
+  "- steps의 text는 '~하기' 체로 작성 (예: '마늘 다지기', '물 끓이기'). '~합니다', '~해주세요' 금지",
+  "- tip은 '~해!' 또는 '꼭 ~해야 해!'처럼 강조하는 명령형 반말로 작성",
+];
+
 function buildStructurePrompt(rawText: string, withCategory: boolean): string {
   const rules = [
     "규칙:",
@@ -169,6 +175,7 @@ function buildStructurePrompt(rawText: string, withCategory: boolean): string {
     "- ingredients는 재료명과 분량을 한 줄로 (예: '대파 1대')",
     "- steps는 조리 순서를 의미 단위로 묶어서 최대 15개 이내로 정리 (사소한 동작은 한 단계로 합치기)",
     "- 각 step의 text는 카드 한 장에 들어갈 만큼 간결하게, tip은 있을 때만 채우기",
+    ...TONE_RULES,
     "- 텍스트에 없는 내용은 추측하지 말고 비워두기",
   ];
   if (withCategory) {
@@ -193,6 +200,7 @@ function buildVideoPrompt(withCategory: boolean): string {
     "- ingredients는 영상에 등장하는 재료명과 분량을 한 줄로",
     "- steps는 조리 순서를 의미 단위로 묶어서 최대 15개 이내로 정리",
     "- 각 step의 text는 카드 한 장에 들어갈 만큼 간결하게, tip은 영상 속 팁이 있을 때만 채우기",
+    ...TONE_RULES,
   ];
   if (withCategory) {
     rules.push(`- category는 이 요리에 어울리는 카테고리 태그를 한 단어로 (예시: ${CATEGORY_EXAMPLES})`);

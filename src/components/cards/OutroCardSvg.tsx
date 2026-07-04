@@ -4,7 +4,11 @@ import { CardCanvas } from "./CardCanvas";
 import { CardHtml } from "./CardHtml";
 import { getLine } from "@/lib/cardLines";
 import { FONT_FAMILY_STACK } from "@/lib/fontOptions";
+import { autoFontSize } from "@/lib/autoFontSize";
 import { CARD_WIDTH, CARD_HEIGHT } from "@/lib/cardLayout";
+
+const ACCOUNT_FONT_SIZE = { min: 32, max: 48, idealChars: 12 };
+const PROMO_FONT_SIZE = { min: 20, max: 30, idealChars: 20 };
 
 export function OutroCardSvg({ card, style }: { card: CardNewsCard; style: CardStyle }) {
   const fontFamily = FONT_FAMILY_STACK[style.font];
@@ -27,10 +31,20 @@ export function OutroCardSvg({ card, style }: { card: CardNewsCard; style: CardS
           }}
         >
           {account?.text && (
-            <span style={{ fontSize: 44, fontWeight: 800, color: account.color }}>{account.text}</span>
+            <span style={{ fontSize: autoFontSize(account.text, ACCOUNT_FONT_SIZE), fontWeight: 800, color: account.color }}>
+              {account.text}
+            </span>
           )}
           {promo?.text && (
-            <span style={{ fontSize: 28, fontWeight: 300, lineHeight: 1.5, color: promo.color, wordBreak: "keep-all" }}>
+            <span
+              style={{
+                fontSize: autoFontSize(promo.text, PROMO_FONT_SIZE),
+                fontWeight: 300,
+                lineHeight: 1.5,
+                color: promo.color,
+                wordBreak: "keep-all",
+              }}
+            >
               {promo.text}
             </span>
           )}

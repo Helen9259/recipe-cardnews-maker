@@ -93,6 +93,28 @@ export interface RecipeSearchResult extends YoutubeVideoDetails {
 }
 
 /**
+ * videoDuration=medium(4~20분) / long(20분+) 두 버킷을 각각 검색해서 합친다.
+ * YouTube API의 videoDuration은 값 하나만 지정할 수 있어(범위 지정 불가) "medium 이상"을
+ * 표현하려면 이렇게 두 번 나눠 부르고 합쳐야 한다. short(4분 미만, 쇼츠 포함)는 아예 검색하지 않아
+ * 결과에서 완전히 제외된다.
+ */
+async function searchVideoIds(
+  query: string,
+  videoDuration: "medium" | "long",
+  maxResults: number,
+  publishedAfter: string
+): Promise<string[]> {
+  const searchUrl = `${YOUTUBE_API_BASE}/search?part=snippet&type=video&videoCategoryId=26&order=viewCount&maxResults=${maxResults}&publishedAfter=${publishedAfter}&videoDuration=${videoDuration}&q=${encodeURIComponent(
+    query
+  )}&key=${getApiKey()}`;
+
+  const searchRes = await fetch(searchUrl);
+  if (!searchRes.ok) throw new Error(`YouTube search.list 실패 (${searchRes.status})`);
+  const searchData = (await searchRes.json()) as { items?: YoutubeApiSearchItem[] };
+  return (searchData.items || []).map((item) => item.id?.videoId).filter((id): id is string => Boolean(id));
+}
+
+/**
  * 요리 카테고리 인기 영상을 조회수 + 최근성 조합 점수로 정렬해 추천한다.
  * publishedAfter로 최근 videos만 후보로 좁히고, 그 안에서 조회수*최근성 가중치로 재정렬.
  */
@@ -101,16 +123,12 @@ export async function searchPopularCookingVideos(
   candidateCount = 15
 ): Promise<RecipeSearchResult[]> {
   const publishedAfter = new Date(Date.now() - 1000 * 60 * 60 * 24 * 180).toISOString(); // 최근 6개월
-  const searchUrl = `${YOUTUBE_API_BASE}/search?part=snippet&type=video&videoCategoryId=26&order=viewCount&maxResults=${candidateCount}&publishedAfter=${publishedAfter}&q=${encodeURIComponent(
-    query
-  )}&key=${getApiKey()}`;
 
-  const searchRes = await fetch(searchUrl);
-  if (!searchRes.ok) throw new Error(`YouTube search.list 실패 (${searchRes.status})`);
-  const searchData = (await searchRes.json()) as { items?: YoutubeApiSearchItem[] };
-  const videoIds: string[] = (searchData.items || [])
-    .map((item) => item.id?.videoId)
-    .filter((id): id is string => Boolean(id));
+  const [mediumIds, longIds] = await Promise.all([
+    searchVideoIds(query, "medium", candidateCount, publishedAfter),
+    searchVideoIds(query, "long", candidateCount, publishedAfter),
+  ]);
+  const videoIds = Array.from(new Set([...mediumIds, ...longIds]));
 
   if (videoIds.length === 0) return [];
 

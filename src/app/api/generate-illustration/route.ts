@@ -6,11 +6,22 @@ const IMAGE_WIDTH = 1024;
 const IMAGE_HEIGHT = 768;
 
 const STYLE_SUFFIX =
-  "black thin line hand-drawn illustration, transparent background, minimal flat line art, " +
-  "no color fill, no shading, slightly detailed, single centered cooking scene, clean white background";
+  "minimalist single-line doodle illustration, thin uniform black line, coloring book style, " +
+  "no fill, isolated on transparent background, no color, no shading, no gradient, single centered cooking scene";
 
+const NEGATIVE_PROMPT =
+  "photorealistic, 3D render, complex shading, gradient, colored background, watermark, text, " +
+  "signature, blurry, low quality, multiple panels";
+
+/**
+ * "볶다"처럼 동작만 뭉뚱그리지 않고, 손/조리도구/재료가 그 동작을 하고 있는 장면을 명시해서
+ * 삽화가 실제 조리 단계를 구체적으로 묘사하도록 유도한다.
+ */
 function buildPrompt(stepText: string): string {
-  return `${stepText}. Style: ${STYLE_SUFFIX}.`;
+  return (
+    `A hand performing this specific cooking action, showing the hands, cooking tool, and ingredients ` +
+    `clearly engaged in the action: "${stepText}". Style: ${STYLE_SUFFIX}.`
+  );
 }
 
 export async function POST(request: Request) {
@@ -39,6 +50,7 @@ export async function POST(request: Request) {
         },
         body: JSON.stringify({
           prompt: buildPrompt(stepText),
+          negative_prompt: NEGATIVE_PROMPT,
           width: IMAGE_WIDTH,
           height: IMAGE_HEIGHT,
         }),
