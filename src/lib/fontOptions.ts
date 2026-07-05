@@ -6,6 +6,11 @@ export const FONT_OPTION_META: Record<FontOption, { label: string; className: st
   okaydandan: { label: "오케이 딴딴체", className: "font-okaydandan", cssVar: "var(--font-okaydandan)" },
   ggubulrim: { label: "꾸불림체", className: "font-ggubulrim", cssVar: "var(--font-ggubulrim)" },
   dosgothic: { label: "도스고딕", className: "font-dosgothic", cssVar: "var(--font-dosgothic)" },
+  cocochoitoon: {
+    label: "그리운 코코초이툰체",
+    className: "font-cocochoitoon",
+    cssVar: "var(--font-cocochoitoon)",
+  },
 };
 
 export const FONT_OPTION_ORDER: FontOption[] = [
@@ -13,6 +18,7 @@ export const FONT_OPTION_ORDER: FontOption[] = [
   "notosans",
   "okaydandan",
   "ggubulrim",
+  "cocochoitoon",
   "dosgothic",
 ];
 
@@ -27,4 +33,5 @@ export const FONT_FAMILY_STACK: Record<FontOption, string> = {
   okaydandan: '"Okay Dandan", cursive',
   ggubulrim: '"Ggubulrim", cursive',
   dosgothic: '"DOSGothic", sans-serif',
+  cocochoitoon: '"Cocochoitoon", cursive',
 };

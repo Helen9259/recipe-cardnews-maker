@@ -25,6 +25,7 @@ const config: Config = {
         okaydandan: ["var(--font-okaydandan)", "cursive"],
         ggubulrim: ["var(--font-ggubulrim)", "cursive"],
         dosgothic: ["var(--font-dosgothic)", "sans-serif"],
+        cocochoitoon: ["var(--font-cocochoitoon)", "cursive"],
       },
     },
   },

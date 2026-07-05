@@ -20,16 +20,25 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: "Cocochoitoon";
+  src: url("/fonts/cocochoitoon.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
 
-  /* 폰트 5종 스택 (화면1 데이터 모델의 FontOption과 1:1 매칭) */
+  /* 폰트 6종 스택 (화면1 데이터 모델의 FontOption과 1:1 매칭) */
   --font-pretendard: "Pretendard Variable", Pretendard, -apple-system, sans-serif;
   --font-notosans: "Noto Sans KR", sans-serif;
   --font-okaydandan: "Okay Dandan", cursive;
   --font-ggubulrim: "Ggubulrim", cursive;
   --font-dosgothic: "DOSGothic", sans-serif;
+  --font-cocochoitoon: "Cocochoitoon", cursive;
 
   /* 카드뉴스 렌더링 전용 포인트 컬러. 사이트 UI 컴포넌트는 절대 참조하지 않는다. */
   --card-accent-color: #f5c94d; /* 기본값: 버터 */

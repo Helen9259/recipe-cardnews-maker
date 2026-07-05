@@ -15,7 +15,8 @@ export type FontOption =
   | "notosans"
   | "okaydandan"
   | "ggubulrim"
-  | "dosgothic";
+  | "dosgothic"
+  | "cocochoitoon";
 
 export interface RecipeStep {
   id: string;
