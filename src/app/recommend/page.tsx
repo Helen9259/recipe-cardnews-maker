@@ -13,7 +13,7 @@ function buildDefaultProject(recipe: RecommendedRecipe): CardNewsProject {
   const { title, sourceType, sourceUrl, sourceName, thumbnailUrl, servings, ingredients, steps } = recipe;
   return {
     recipe: { title, sourceType, sourceUrl, sourceName, thumbnailUrl, servings, ingredients, steps },
-    style: { mode: "light", mainColor: "butter", font: "ggubblim" },
+    style: { mode: "light", mainColor: "butter", font: "pretendard" },
     instaAccountName: "",
     promoText: "",
   };

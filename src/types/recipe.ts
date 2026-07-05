@@ -14,7 +14,7 @@ export type FontOption =
   | "pretendard"
   | "notosans"
   | "okaydandan"
-  | "ggubblim"
+  | "ggubulrim"
   | "dosgothic";
 
 export interface RecipeStep {

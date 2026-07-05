@@ -4,15 +4,15 @@ export const FONT_OPTION_META: Record<FontOption, { label: string; className: st
   pretendard: { label: "Pretendard", className: "font-pretendard", cssVar: "var(--font-pretendard)" },
   notosans: { label: "Noto Sans KR", className: "font-notosans", cssVar: "var(--font-notosans)" },
   okaydandan: { label: "오케이 딴딴체", className: "font-okaydandan", cssVar: "var(--font-okaydandan)" },
-  ggubblim: { label: "꾸블림체", className: "font-ggubblim", cssVar: "var(--font-ggubblim)" },
+  ggubulrim: { label: "꾸불림체", className: "font-ggubulrim", cssVar: "var(--font-ggubulrim)" },
   dosgothic: { label: "도스고딕", className: "font-dosgothic", cssVar: "var(--font-dosgothic)" },
 };
 
 export const FONT_OPTION_ORDER: FontOption[] = [
-  "ggubblim",
   "pretendard",
   "notosans",
   "okaydandan",
+  "ggubulrim",
   "dosgothic",
 ];
 
@@ -25,6 +25,6 @@ export const FONT_FAMILY_STACK: Record<FontOption, string> = {
   pretendard: '"Pretendard Variable", Pretendard, -apple-system, sans-serif',
   notosans: '"Noto Sans KR", sans-serif',
   okaydandan: '"Okay Dandan", cursive',
-  ggubblim: '"Ggubblim", cursive',
+  ggubulrim: '"Ggubulrim", cursive',
   dosgothic: '"DOSGothic", sans-serif',
 };

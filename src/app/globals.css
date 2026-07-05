@@ -13,8 +13,8 @@
 }
 
 @font-face {
-  font-family: "Ggubblim";
-  src: url("/fonts/ggubblim.woff2") format("woff2");
+  font-family: "Ggubulrim";
+  src: url("/fonts/ggubulrim.woff2") format("woff2");
   font-weight: normal;
   font-style: normal;
   font-display: swap;
@@ -28,7 +28,7 @@
   --font-pretendard: "Pretendard Variable", Pretendard, -apple-system, sans-serif;
   --font-notosans: "Noto Sans KR", sans-serif;
   --font-okaydandan: "Okay Dandan", cursive;
-  --font-ggubblim: "Ggubblim", cursive;
+  --font-ggubulrim: "Ggubulrim", cursive;
   --font-dosgothic: "DOSGothic", sans-serif;
 
   /* 카드뉴스 렌더링 전용 포인트 컬러. 사이트 UI 컴포넌트는 절대 참조하지 않는다. */

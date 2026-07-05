@@ -20,7 +20,7 @@ export default function StylePage() {
 
   const [mode, setMode] = useState<ColorMode>(project?.style.mode ?? "light");
   const [mainColor, setMainColor] = useState<MainColor>(project?.style.mainColor ?? "butter");
-  const [font, setFont] = useState<FontOption>(project?.style.font ?? "ggubblim");
+  const [font, setFont] = useState<FontOption>(project?.style.font ?? "pretendard");
   const [instaAccountName, setInstaAccountName] = useState(project?.instaAccountName ?? "");
   const [promoText, setPromoText] = useState(project?.promoText ?? "");
 

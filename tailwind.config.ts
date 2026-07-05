@@ -23,7 +23,7 @@ const config: Config = {
         pretendard: ["var(--font-pretendard)", "sans-serif"],
         notosans: ["var(--font-notosans)", "sans-serif"],
         okaydandan: ["var(--font-okaydandan)", "cursive"],
-        ggubblim: ["var(--font-ggubblim)", "cursive"],
+        ggubulrim: ["var(--font-ggubulrim)", "cursive"],
         dosgothic: ["var(--font-dosgothic)", "sans-serif"],
       },
     },

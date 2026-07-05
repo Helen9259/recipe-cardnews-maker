@@ -11,7 +11,7 @@ import { Recipe, CardNewsProject } from "@/types/recipe";
 function buildDefaultProject(recipe: Recipe): CardNewsProject {
   return {
     recipe,
-    style: { mode: "light", mainColor: "butter", font: "ggubblim" },
+    style: { mode: "light", mainColor: "butter", font: "pretendard" },
     instaAccountName: "",
     promoText: "",
   };
