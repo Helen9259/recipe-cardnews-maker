@@ -41,7 +41,7 @@
   --font-cocochoitoon: "Cocochoitoon", cursive;
 
   /* 카드뉴스 렌더링 전용 포인트 컬러. 사이트 UI 컴포넌트는 절대 참조하지 않는다. */
-  --card-accent-color: #f5c94d; /* 기본값: 버터 */
+  --card-accent-color: #fff3b0; /* 기본값: 버터 */
 }
 
 body {

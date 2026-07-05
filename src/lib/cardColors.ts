@@ -6,8 +6,9 @@ import { MainColor } from "@/types/recipe";
  * 사이트 UI(버튼/로딩바 등)는 절대 이 값을 참조하지 않고 neutral 고정값만 사용한다.
  */
 export const MAIN_COLOR_HEX: Record<MainColor, { light: string; dark: string; label: string }> = {
-  butter: { light: "#f5c94d", dark: "#f7d878", label: "버터" },
-  yellow: { light: "#f6c445", dark: "#f9d874", label: "옐로우" },
+  // 버터(연한 크림빛 파스텔)와 옐로우(선명한 원색)가 비슷해 보인다는 피드백으로 확실히 갈라둠
+  butter: { light: "#FFF3B0", dark: "#FFF6C4", label: "버터" },
+  yellow: { light: "#FFD400", dark: "#FFDE40", label: "옐로우" },
   mint: { light: "#4fd1c5", dark: "#6ee0d5", label: "민트" },
   green: { light: "#6fbf73", dark: "#8fd694", label: "그린" },
   lavender: { light: "#a78bfa", dark: "#bfa8fc", label: "라벤더" },

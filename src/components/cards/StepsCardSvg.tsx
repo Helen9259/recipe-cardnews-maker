@@ -12,8 +12,8 @@ const PADDING = 64;
 const ILLUSTRATION_WIDTH = CARD_WIDTH - PADDING * 2;
 const ILLUSTRATION_HEIGHT = ILLUSTRATION_WIDTH / ILLUSTRATION_ASPECT;
 
-const BODY_FONT_SIZE = { min: 24, max: 36, idealChars: 20 };
-const TIP_FONT_SIZE = { min: 18, max: 24, idealChars: 22 };
+const BODY_FONT_SIZE = { min: 32, max: 44, idealChars: 20 };
+const TIP_FONT_SIZE = { min: 24, max: 30, idealChars: 22 };
 
 export function StepsCardSvg({ card, style }: { card: CardNewsCard; style: CardStyle }) {
   const fontFamily = FONT_FAMILY_STACK[style.font];

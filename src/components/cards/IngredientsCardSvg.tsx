@@ -7,7 +7,7 @@ import { FONT_FAMILY_STACK } from "@/lib/fontOptions";
 import { autoFontSize } from "@/lib/autoFontSize";
 import { CARD_WIDTH, CARD_HEIGHT } from "@/lib/cardLayout";
 
-const ITEM_FONT_SIZE = { min: 20, max: 32, idealChars: 8 };
+const ITEM_FONT_SIZE = { min: 28, max: 40, idealChars: 8 };
 
 function columnCount(itemCount: number): number {
   if (itemCount <= 6) return 1;
