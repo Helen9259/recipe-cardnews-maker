@@ -1,6 +1,6 @@
 import { v4 as uuid } from "uuid";
 import { CardNewsCard, CardLine } from "@/types/card";
-import { CardNewsProject, MainColor } from "@/types/recipe";
+import { CardNewsProject } from "@/types/recipe";
 import { getDarkModeTokens } from "@/lib/darkMode";
 import { getCardAccentColor } from "@/lib/cardColors";
 import { splitTitleForTwoTone } from "@/lib/titleSplit";
@@ -99,10 +99,7 @@ export function buildBaseCards(project: CardNewsProject): CardNewsCard[] {
 }
 
 /** 순서 카드 중 삽화가 없는 카드에 대해 /api/generate-illustration을 호출해 채워 넣는다 */
-export async function generateStepIllustrations(
-  cards: CardNewsCard[],
-  mainColor: MainColor
-): Promise<CardNewsCard[]> {
+export async function generateStepIllustrations(cards: CardNewsCard[]): Promise<CardNewsCard[]> {
   const results = await Promise.all(
     cards.map(async (card) => {
       if (card.kind !== "steps" || card.imageUrl) return card;
@@ -114,7 +111,6 @@ export async function generateStepIllustrations(
           body: JSON.stringify({
             stepText: bodyLine?.text || "",
             keyIngredient: card.keyIngredient,
-            mainColor,
           }),
         });
         if (!res.ok) return card;

@@ -16,17 +16,6 @@ export const MAIN_COLOR_HEX: Record<MainColor, { light: string; dark: string; la
   blue: { light: "#5b9bf5", dark: "#7bb0ff", label: "블루" },
 };
 
-/** Cloudflare Workers AI 삽화 프롬프트에 넣는 영문 색상 설명 (SDXL은 한글 라벨/hex보다 영문 색상명을 잘 이해함) */
-export const MAIN_COLOR_PROMPT_LABEL: Record<MainColor, string> = {
-  butter: "pastel butter yellow",
-  yellow: "vivid yellow",
-  mint: "mint green",
-  green: "green",
-  lavender: "lavender purple",
-  coralpink: "coral pink",
-  blue: "blue",
-};
-
 export const MAIN_COLOR_ORDER: MainColor[] = [
   "butter",
   "yellow",

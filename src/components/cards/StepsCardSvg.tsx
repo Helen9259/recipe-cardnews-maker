@@ -4,7 +4,7 @@ import { CardCanvas } from "./CardCanvas";
 import { CardHtml } from "./CardHtml";
 import { getLine } from "@/lib/cardLines";
 import { FONT_FAMILY_STACK } from "@/lib/fontOptions";
-import { getDarkModeTokens, getIllustrationFilter } from "@/lib/darkMode";
+import { getDarkModeTokens } from "@/lib/darkMode";
 import { autoFontSize } from "@/lib/autoFontSize";
 import { CARD_WIDTH, ILLUSTRATION_ASPECT } from "@/lib/cardLayout";
 
@@ -34,7 +34,6 @@ export function StepsCardSvg({ card, style }: { card: CardNewsCard; style: CardS
               width: "100%",
               height: "100%",
               objectFit: "contain",
-              filter: getIllustrationFilter(style.mode),
             }}
           />
         ) : (
