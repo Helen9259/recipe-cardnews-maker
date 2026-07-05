@@ -31,7 +31,7 @@ export default function CardsEditPage() {
       if (needsIllustrations) {
         setGenerating(true);
         updateProject((prev) => ({ ...prev, cards: base }));
-        const withIllustrations = await generateStepIllustrations(base);
+        const withIllustrations = await generateStepIllustrations(base, project!.style.mainColor);
         updateProject((prev) => ({ ...prev, cards: withIllustrations }));
         setGenerating(false);
       } else if (!project!.cards) {

@@ -18,6 +18,8 @@ export interface CardNewsCard {
   imageUrl?: string;
   /** 원본 RecipeStep id 목록 (steps 카드 재생성/추적용) */
   stepIds?: string[];
+  /** 이 단계에서 삽화의 주인공이 될 핵심 재료명 (steps 카드 전용, recipe.ingredients에서 매칭) */
+  keyIngredient?: string;
   /** 화면6 내보내기에서 선택 해제 시 false */
   selected: boolean;
 }

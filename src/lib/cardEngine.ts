@@ -1,12 +1,29 @@
 import { v4 as uuid } from "uuid";
 import { CardNewsCard, CardLine } from "@/types/card";
-import { CardNewsProject } from "@/types/recipe";
+import { CardNewsProject, MainColor } from "@/types/recipe";
 import { getDarkModeTokens } from "@/lib/darkMode";
 import { getCardAccentColor } from "@/lib/cardColors";
 import { splitTitleForTwoTone } from "@/lib/titleSplit";
 
 function line(role: CardLine["role"], text: string, color: string): CardLine {
   return { id: uuid(), role, text, color };
+}
+
+/** "대파 1대"처럼 수량이 붙은 재료 문자열에서 이름만 떼어낸다 */
+function stripQuantity(ingredient: string): string {
+  return ingredient.replace(/\s*\d+.*$/, "").trim();
+}
+
+/**
+ * 조리 단계 문구에 언급된 재료를 recipe.ingredients 순서대로 찾아 첫 매칭을 반환한다.
+ * 삽화가 "재료 아이콘"을 그릴 때 어떤 재료를 주인공으로 삼을지 정하는 데 쓰인다.
+ */
+function findKeyIngredient(stepText: string, ingredients: string[]): string | undefined {
+  for (const ingredient of ingredients) {
+    const name = stripQuantity(ingredient);
+    if (name && stepText.includes(name)) return name;
+  }
+  return undefined;
 }
 
 /**
@@ -63,6 +80,7 @@ export function buildBaseCards(project: CardNewsProject): CardNewsCard[] {
       selected: true,
       imageUrl: step.illustrationUrl,
       stepIds: [step.id],
+      keyIngredient: findKeyIngredient(step.text, recipe.ingredients),
       lines,
     });
   });
@@ -81,7 +99,10 @@ export function buildBaseCards(project: CardNewsProject): CardNewsCard[] {
 }
 
 /** 순서 카드 중 삽화가 없는 카드에 대해 /api/generate-illustration을 호출해 채워 넣는다 */
-export async function generateStepIllustrations(cards: CardNewsCard[]): Promise<CardNewsCard[]> {
+export async function generateStepIllustrations(
+  cards: CardNewsCard[],
+  mainColor: MainColor
+): Promise<CardNewsCard[]> {
   const results = await Promise.all(
     cards.map(async (card) => {
       if (card.kind !== "steps" || card.imageUrl) return card;
@@ -90,7 +111,11 @@ export async function generateStepIllustrations(cards: CardNewsCard[]): Promise<
         const res = await fetch("/api/generate-illustration", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ stepText: bodyLine?.text || "" }),
+          body: JSON.stringify({
+            stepText: bodyLine?.text || "",
+            keyIngredient: card.keyIngredient,
+            mainColor,
+          }),
         });
         if (!res.ok) return card;
         const data = await res.json();
