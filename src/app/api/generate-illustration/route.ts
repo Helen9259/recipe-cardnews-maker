@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
 import sharp from "sharp";
 
-const CF_MODEL = "@cf/stabilityai/stable-diffusion-xl-base-1.0";
-// 4:3 가로형 (spec 고정 비율)
-const IMAGE_WIDTH = 1024;
-const IMAGE_HEIGHT = 768;
+const CF_MODEL = "@cf/black-forest-labs/flux-1-schnell";
+// flux-1-schnell 입력 스키마는 prompt/steps/seed만 지원하고 negative_prompt·width·height가 없다
+// (SDXL과 달리). steps는 최대 8(기본 4) — 속도 대비 품질을 위해 최대치를 쓴다.
+const STEPS = 8;
 
-const NEGATIVE_PROMPT =
-  "photorealistic, 3D render, complex shading, watermark, text, cooking utensils, pan, knife, cutting board";
+// negative_prompt 필드가 없는 모델이라 제외하고 싶은 요소는 프롬프트 문장 안에 "no X" 형태로 넣는다.
+const NEGATIVE_PHRASE =
+  "not photorealistic, no 3D render, no complex shading, no watermark, no text, " +
+  "no cooking utensils, no pan, no knife, no cutting board";
 
 /** 그 단계의 핵심 재료 자체를 귀엽고 따뜻한 톤의 손그림 크레용 스타일로 그린다 */
 function buildPrompt(keyIngredient: string | undefined, stepText: string): string {
@@ -16,7 +18,7 @@ function buildPrompt(keyIngredient: string | undefined, stepText: string): strin
     `Cute hand-drawn illustration of ${subject}, soft crayon texture with visible pencil strokes, ` +
     "colored outlines matching the fill color (no black outlines), vivid warm color palette, " +
     "simple white background, minimal flat shading, slightly imperfect wobbly linework, " +
-    "single object centered, no text"
+    `single object centered, no text. ${NEGATIVE_PHRASE}.`
   );
 }
 
@@ -105,9 +107,7 @@ export async function POST(request: Request) {
         },
         body: JSON.stringify({
           prompt: buildPrompt(keyIngredient, stepText),
-          negative_prompt: NEGATIVE_PROMPT,
-          width: IMAGE_WIDTH,
-          height: IMAGE_HEIGHT,
+          steps: STEPS,
         }),
       }
     );
