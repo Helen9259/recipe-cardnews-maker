@@ -8,7 +8,12 @@ import { Button } from "@/components/ui/Button";
 import { CardRenderer } from "@/components/cards/CardRenderer";
 import { useAppSession } from "@/context/AppSessionContext";
 import { useRequireProject } from "@/lib/useRequireProject";
-import { buildBaseCards, generateStepIllustrations, updateCardLine } from "@/lib/cardEngine";
+import {
+  buildBaseCards,
+  generateStepIllustrations,
+  regenerateStepIllustration,
+  updateCardLine,
+} from "@/lib/cardEngine";
 import { getCardLabel } from "@/lib/cardLabels";
 import { LINE_MAX_LENGTH } from "@/lib/cardLineLimits";
 
@@ -18,6 +23,7 @@ export default function CardsEditPage() {
   const project = useRequireProject();
   const [generating, setGenerating] = useState(false);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [regeneratingCardId, setRegeneratingCardId] = useState<string | null>(null);
   const generationStarted = useRef(false);
 
   useEffect(() => {
@@ -64,6 +70,18 @@ export default function CardsEditPage() {
   function handleNext() {
     setCurrentStep(5);
     router.push("/export");
+  }
+
+  async function handleRegenerateIllustration(cardId: string) {
+    const target = cards.find((c) => c.id === cardId);
+    if (!target) return;
+    setRegeneratingCardId(cardId);
+    const updated = await regenerateStepIllustration(target);
+    updateProject((prev) => ({
+      ...prev,
+      cards: (prev.cards ?? []).map((c) => (c.id === cardId ? updated : c)),
+    }));
+    setRegeneratingCardId(null);
   }
 
   return (
@@ -139,17 +157,33 @@ export default function CardsEditPage() {
 
           <div className="grid grid-cols-3 gap-4">
             {cards.map((card) => (
-              <button
-                key={card.id}
-                type="button"
-                onClick={() => setSelectedCardId(card.id)}
-                className={[
-                  "overflow-hidden rounded-lg border-2 text-left transition-colors",
-                  card.id === selectedCard?.id ? "border-neutral-800" : "border-transparent hover:border-neutral-300",
-                ].join(" ")}
-              >
-                <CardRenderer card={card} style={project.style} />
-              </button>
+              <div key={card.id} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setSelectedCardId(card.id)}
+                  className={[
+                    "block w-full overflow-hidden rounded-lg border-2 text-left transition-colors",
+                    card.id === selectedCard?.id ? "border-neutral-800" : "border-transparent hover:border-neutral-300",
+                  ].join(" ")}
+                >
+                  <CardRenderer card={card} style={project.style} />
+                </button>
+                {card.illustrationFailed && (
+                  <div className="absolute inset-x-0 bottom-3 flex justify-center">
+                    <Button
+                      variant="secondary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRegenerateIllustration(card.id);
+                      }}
+                      disabled={regeneratingCardId === card.id}
+                      className="shadow-md"
+                    >
+                      {regeneratingCardId === card.id ? "다시 생성 중..." : "삽화 생성 실패, 다시 생성"}
+                    </Button>
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         </div>

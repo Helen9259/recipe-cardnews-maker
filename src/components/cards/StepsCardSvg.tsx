@@ -36,6 +36,26 @@ export function StepsCardSvg({ card, style }: { card: CardNewsCard; style: CardS
               objectFit: "contain",
             }}
           />
+        ) : card.illustrationFailed ? (
+          <div
+            style={{
+              width: "100%",
+              height: "100%",
+              borderRadius: 24,
+              border: "2px dashed #e0483e",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontFamily,
+              fontSize: 20,
+              color: "#e0483e",
+              textAlign: "center",
+              padding: 16,
+              boxSizing: "border-box",
+            }}
+          >
+            삽화 생성 실패
+          </div>
         ) : (
           <div
             style={{

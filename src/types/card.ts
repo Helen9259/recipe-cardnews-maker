@@ -18,8 +18,13 @@ export interface CardNewsCard {
   imageUrl?: string;
   /** 원본 RecipeStep id 목록 (steps 카드 재생성/추적용) */
   stepIds?: string[];
-  /** 이 단계에서 삽화의 주인공이 될 핵심 재료명 (steps 카드 전용, recipe.ingredients에서 매칭) */
+  /**
+   * 이 단계 삽화의 주인공이 될 핵심 오브젝트/재료명 (steps 카드 전용).
+   * Gemini 배치 호출로 뽑은 영문 키워드가 우선이고, 실패 시 로컬 문자열 매칭 결과로 대체된다.
+   */
   keyIngredient?: string;
+  /** 삽화 생성이 재시도까지 실패했는지 여부 (steps 카드 전용) — true면 화면에 재시도 버튼을 보여준다 */
+  illustrationFailed?: boolean;
   /** 화면6 내보내기에서 선택 해제 시 false */
   selected: boolean;
 }

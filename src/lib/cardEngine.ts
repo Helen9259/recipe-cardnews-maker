@@ -98,30 +98,129 @@ export function buildBaseCards(project: CardNewsProject): CardNewsCard[] {
   return cards;
 }
 
-/** 순서 카드 중 삽화가 없는 카드에 대해 /api/generate-illustration을 호출해 채워 넣는다 */
-export async function generateStepIllustrations(cards: CardNewsCard[]): Promise<CardNewsCard[]> {
-  const results = await Promise.all(
-    cards.map(async (card) => {
-      if (card.kind !== "steps" || card.imageUrl) return card;
-      const bodyLine = card.lines.find((l) => l.role === "body");
-      try {
-        const res = await fetch("/api/generate-illustration", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            stepText: bodyLine?.text || "",
-            keyIngredient: card.keyIngredient,
-          }),
-        });
-        if (!res.ok) return card;
-        const data = await res.json();
-        return { ...card, imageUrl: data.imageUrl as string };
-      } catch {
-        return card;
-      }
-    })
-  );
+/** 여러 항목을 동시에 최대 limit개까지만 처리한다 (Cloudflare 쪽에 한꺼번에 몰리는 것 방지) */
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T, idx: number) => Promise<R>
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let cursor = 0;
+
+  async function worker() {
+    while (cursor < items.length) {
+      const idx = cursor++;
+      results[idx] = await fn(items[idx], idx);
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
   return results;
+}
+
+interface KeywordResult {
+  step: number;
+  keyword: string;
+}
+
+/**
+ * 재료 목록 + 전체 조리 단계를 한 번에 보내서 단계별 영문 삽화 키워드를 받아온다.
+ * 실패해도 조용히 빈 결과를 반환해서(throw하지 않음) 로컬 매칭 폴백으로 계속 진행되게 한다.
+ */
+async function fetchIllustrationKeywords(
+  ingredients: string[],
+  stepTexts: string[]
+): Promise<Map<number, string>> {
+  const keywordByIndex = new Map<number, string>();
+  try {
+    const res = await fetch("/api/illustration-keywords", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ingredients, steps: stepTexts }),
+    });
+    if (!res.ok) {
+      console.error(`[illustration] 배치 키워드 추출 실패 (${res.status}), 로컬 매칭으로 대체`);
+      return keywordByIndex;
+    }
+    const data = (await res.json()) as { keywords?: KeywordResult[] };
+    for (const { step, keyword } of data.keywords ?? []) {
+      if (typeof step === "number" && keyword) keywordByIndex.set(step - 1, keyword);
+    }
+  } catch (err) {
+    console.error("[illustration] 배치 키워드 추출 중 오류, 로컬 매칭으로 대체:", err);
+  }
+  return keywordByIndex;
+}
+
+async function requestIllustration(stepText: string, keyIngredient: string | undefined): Promise<string | null> {
+  try {
+    const res = await fetch("/api/generate-illustration", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ stepText, keyIngredient }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return (data.imageUrl as string) || null;
+  } catch {
+    return null;
+  }
+}
+
+const ILLUSTRATION_CONCURRENCY = 3;
+
+/**
+ * 순서 카드 중 삽화가 없는 카드에 대해 /api/generate-illustration을 호출해 채워 넣는다.
+ * 1) 재료+전체 단계를 배치로 한 번만 Gemini에 보내 영문 키워드를 뽑고(실패 시 로컬 매칭 폴백),
+ * 2) 카드별로 최대 1회 재시도, 그래도 실패하면 imageUrl 없이 illustrationFailed: true로 표시해서
+ *    화면에서 조용히 넘어가지 않고 재시도 버튼을 보여줄 수 있게 한다.
+ */
+export async function generateStepIllustrations(cards: CardNewsCard[]): Promise<CardNewsCard[]> {
+  const stepCards = cards.filter((c) => c.kind === "steps");
+  if (!stepCards.some((c) => !c.imageUrl)) return cards;
+
+  const ingredientCard = cards.find((c) => c.kind === "ingredients");
+  const ingredients = ingredientCard
+    ? ingredientCard.lines.filter((l) => l.role === "body").map((l) => l.text)
+    : [];
+  const stepTexts = stepCards.map((c) => c.lines.find((l) => l.role === "body")?.text || "");
+
+  const keywordByIndex = await fetchIllustrationKeywords(ingredients, stepTexts);
+
+  const updatedStepCards = await mapWithConcurrency(stepCards, ILLUSTRATION_CONCURRENCY, async (card, idx) => {
+    if (card.imageUrl) return card;
+
+    const stepText = stepTexts[idx];
+    const keyIngredient = keywordByIndex.get(idx) || card.keyIngredient;
+
+    let imageUrl = await requestIllustration(stepText, keyIngredient);
+    if (!imageUrl) {
+      console.error(`[illustration] 1차 생성 실패 (${card.id}), 재시도`);
+      imageUrl = await requestIllustration(stepText, keyIngredient);
+    }
+
+    if (!imageUrl) {
+      console.error(`[illustration] 재시도까지 실패 (${card.id})`);
+      return { ...card, keyIngredient, illustrationFailed: true };
+    }
+    return { ...card, keyIngredient, imageUrl, illustrationFailed: false };
+  });
+
+  const updatedById = new Map(updatedStepCards.map((c) => [c.id, c]));
+  return cards.map((card) => (card.kind === "steps" ? updatedById.get(card.id) ?? card : card));
+}
+
+/** 화면5에서 삽화 생성에 실패한 카드 하나만 다시 시도할 때 사용 */
+export async function regenerateStepIllustration(card: CardNewsCard): Promise<CardNewsCard> {
+  const bodyLine = card.lines.find((l) => l.role === "body");
+  const stepText = bodyLine?.text || "";
+
+  const imageUrl = await requestIllustration(stepText, card.keyIngredient);
+  if (!imageUrl) {
+    console.error(`[illustration] 수동 재시도 실패 (${card.id})`);
+    return { ...card, illustrationFailed: true };
+  }
+  return { ...card, imageUrl, illustrationFailed: false };
 }
 
 /** 화면5 편집 패널에서 특정 카드의 특정 줄 텍스트/색상을 수정할 때 사용 */
