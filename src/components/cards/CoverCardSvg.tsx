@@ -8,8 +8,8 @@ import { FONT_FAMILY_STACK } from "@/lib/fontOptions";
 import { autoFontSize } from "@/lib/autoFontSize";
 import { CARD_WIDTH, CARD_HEIGHT } from "@/lib/cardLayout";
 
-const TITLE_FONT_SIZE = { min: 36, max: 64, idealChars: 10 };
-const SUBTITLE_FONT_SIZE = { min: 20, max: 26, idealChars: 16 };
+const TITLE_FONT_SIZE = { min: 46, max: 74, idealChars: 10 };
+const SUBTITLE_FONT_SIZE = { min: 30, max: 36, idealChars: 16 };
 
 /**
  * 표지 카드는 3가지 버전 중 하나로 렌더링된다 (card.coverImageMode):
@@ -39,7 +39,7 @@ export function CoverCardSvg({ card, style }: { card: CardNewsCard; style: CardS
             style={{
               textAlign: "center",
               fontFamily,
-              fontSize: 28,
+              fontSize: 38,
               fontWeight: 600,
               color: hasImage ? "#ffffff" : watermark.color,
             }}

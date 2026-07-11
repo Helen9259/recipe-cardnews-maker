@@ -9,8 +9,8 @@ import { getDarkModeTokens } from "@/lib/darkMode";
 import { autoFontSize } from "@/lib/autoFontSize";
 import { CARD_WIDTH, CARD_HEIGHT } from "@/lib/cardLayout";
 
-const BODY_FONT_SIZE = { min: 36, max: 52, idealChars: 20 };
-const TIP_FONT_SIZE = { min: 24, max: 30, idealChars: 22 };
+const BODY_FONT_SIZE = { min: 46, max: 62, idealChars: 20 };
+const TIP_FONT_SIZE = { min: 34, max: 40, idealChars: 22 };
 
 export function StepsCardSvg({ card, style }: { card: CardNewsCard; style: CardStyle }) {
   const mainFontFamily = FONT_FAMILY_STACK[style.mainFont];
@@ -41,7 +41,7 @@ export function StepsCardSvg({ card, style }: { card: CardNewsCard; style: CardS
                 display: "inline-block",
                 width: "fit-content",
                 fontFamily: mainFontFamily,
-                fontSize: 26,
+                fontSize: 36,
                 fontWeight: 700,
                 color: "var(--card-accent-color)",
                 letterSpacing: 1,

@@ -8,8 +8,8 @@ import { FONT_FAMILY_STACK } from "@/lib/fontOptions";
 import { autoFontSize } from "@/lib/autoFontSize";
 import { CARD_WIDTH, CARD_HEIGHT } from "@/lib/cardLayout";
 
-const ACCOUNT_FONT_SIZE = { min: 32, max: 48, idealChars: 12 };
-const PROMO_FONT_SIZE = { min: 26, max: 36, idealChars: 20 };
+const ACCOUNT_FONT_SIZE = { min: 42, max: 58, idealChars: 12 };
+const PROMO_FONT_SIZE = { min: 36, max: 46, idealChars: 20 };
 
 export function OutroCardSvg({ card, style }: { card: CardNewsCard; style: CardStyle }) {
   const fontFamily = FONT_FAMILY_STACK[style.mainFont];

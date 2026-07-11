@@ -8,7 +8,7 @@ import { FONT_FAMILY_STACK } from "@/lib/fontOptions";
 import { autoFontSize } from "@/lib/autoFontSize";
 import { CARD_WIDTH, CARD_HEIGHT } from "@/lib/cardLayout";
 
-const ITEM_FONT_SIZE = { min: 28, max: 40, idealChars: 8 };
+const ITEM_FONT_SIZE = { min: 38, max: 50, idealChars: 8 };
 
 function columnCount(itemCount: number): number {
   if (itemCount <= 6) return 1;
@@ -43,10 +43,10 @@ export function IngredientsCardSvg({ card, style }: { card: CardNewsCard; style:
         <div style={{ display: "flex", flexDirection: "column", height: "100%", fontFamily }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 16 }}>
             {title?.text && (
-              <span style={{ fontSize: 48, fontWeight: 800, color: textColor(title.color) }}>{title.text}</span>
+              <span style={{ fontSize: 58, fontWeight: 800, color: textColor(title.color) }}>{title.text}</span>
             )}
             {subtitle?.text && (
-              <span style={{ fontSize: 24, fontWeight: 400, color: subtextColor(subtitle.color) }}>{subtitle.text}</span>
+              <span style={{ fontSize: 34, fontWeight: 400, color: subtextColor(subtitle.color) }}>{subtitle.text}</span>
             )}
           </div>
 

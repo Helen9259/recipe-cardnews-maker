@@ -9,8 +9,8 @@ import { autoFontSize } from "@/lib/autoFontSize";
 import { CARD_WIDTH, CARD_HEIGHT } from "@/lib/cardLayout";
 
 // 재료+순서가 한 카드에 다 들어가야 해서(사진 모드 꺼짐), 각각 단독 카드보다 밀도를 높인다
-const ITEM_FONT_SIZE = { min: 20, max: 28, idealChars: 8 };
-const STEP_FONT_SIZE = { min: 22, max: 32, idealChars: 26 };
+const ITEM_FONT_SIZE = { min: 30, max: 38, idealChars: 8 };
+const STEP_FONT_SIZE = { min: 32, max: 42, idealChars: 26 };
 
 function columnCount(itemCount: number): number {
   if (itemCount <= 4) return 1;
@@ -43,7 +43,7 @@ export function IngredientsStepsCardSvg({ card, style }: { card: CardNewsCard; s
       <CardHtml x={64} y={boxY} width={CARD_WIDTH - 128} height={boxHeight}>
         <div style={{ display: "flex", flexDirection: "column", height: "100%", fontFamily, gap: 28 }}>
           {title?.text && (
-            <span style={{ fontSize: 40, fontWeight: 800, color: textColor(title.color) }}>{title.text}</span>
+            <span style={{ fontSize: 50, fontWeight: 800, color: textColor(title.color) }}>{title.text}</span>
           )}
 
           {ingredients.length > 0 && (
