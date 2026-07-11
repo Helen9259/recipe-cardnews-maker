@@ -6,16 +6,8 @@ import { PageShell } from "@/components/layout/PageShell";
 import { AiLoadingIndicator } from "@/components/layout/AiLoadingIndicator";
 import { Button } from "@/components/ui/Button";
 import { useAppSession } from "@/context/AppSessionContext";
-import { Recipe, CardNewsProject } from "@/types/recipe";
-
-function buildDefaultProject(recipe: Recipe): CardNewsProject {
-  return {
-    recipe,
-    style: { mode: "light", mainColor: "butter", font: "pretendard" },
-    instaAccountName: "",
-    promoText: "",
-  };
-}
+import { Recipe } from "@/types/recipe";
+import { buildDefaultProject } from "@/lib/defaultProject";
 
 export default function HomePage() {
   const router = useRouter();

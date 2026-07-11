@@ -3,6 +3,7 @@ import { CardStyle } from "@/types/recipe";
 import { CoverCardSvg } from "./CoverCardSvg";
 import { IngredientsCardSvg } from "./IngredientsCardSvg";
 import { StepsCardSvg } from "./StepsCardSvg";
+import { IngredientsStepsCardSvg } from "./IngredientsStepsCardSvg";
 import { OutroCardSvg } from "./OutroCardSvg";
 
 export function CardRenderer({ card, style }: { card: CardNewsCard; style: CardStyle }) {
@@ -13,6 +14,8 @@ export function CardRenderer({ card, style }: { card: CardNewsCard; style: CardS
       return <IngredientsCardSvg card={card} style={style} />;
     case "steps":
       return <StepsCardSvg card={card} style={style} />;
+    case "ingredientsSteps":
+      return <IngredientsStepsCardSvg card={card} style={style} />;
     case "outro":
       return <OutroCardSvg card={card} style={style} />;
     default:

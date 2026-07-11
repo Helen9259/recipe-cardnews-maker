@@ -7,4 +7,6 @@ export const LINE_MAX_LENGTH: Record<CardLineRole, number> = {
   body: 90,
   tip: 60,
   watermark: 20,
+  ingredient: 24,
+  step: 100,
 };

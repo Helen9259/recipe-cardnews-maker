@@ -162,3 +162,52 @@ export async function searchPopularCookingVideos(
 
   return results.sort((a, b) => b.score - a.score);
 }
+
+async function searchVideoIdsByRelevance(
+  query: string,
+  videoDuration: "medium" | "long",
+  maxResults: number
+): Promise<string[]> {
+  const searchUrl = `${YOUTUBE_API_BASE}/search?part=snippet&type=video&videoCategoryId=26&order=relevance&maxResults=${maxResults}&videoDuration=${videoDuration}&q=${encodeURIComponent(
+    query
+  )}&key=${getApiKey()}`;
+
+  const searchRes = await fetch(searchUrl);
+  if (!searchRes.ok) throw new Error(`YouTube search.list 실패 (${searchRes.status})`);
+  const searchData = (await searchRes.json()) as { items?: YoutubeApiSearchItem[] };
+  return (searchData.items || []).map((item) => item.id?.videoId).filter((id): id is string => Boolean(id));
+}
+
+/**
+ * 사용자가 직접 입력한 검색어로 유튜브를 검색한다 (인기/신선도 가중치 없이 관련도순).
+ * 쇼츠 제외 기준(medium/long duration)은 추천 검색과 동일하게 유지한다.
+ */
+export async function searchCookingVideosByQuery(
+  query: string,
+  maxResults = 8
+): Promise<YoutubeVideoDetails[]> {
+  const [mediumIds, longIds] = await Promise.all([
+    searchVideoIdsByRelevance(query, "medium", maxResults),
+    searchVideoIdsByRelevance(query, "long", maxResults),
+  ]);
+  const videoIds = Array.from(new Set([...mediumIds, ...longIds])).slice(0, maxResults);
+
+  if (videoIds.length === 0) return [];
+
+  const detailsUrl = `${YOUTUBE_API_BASE}/videos?part=snippet,statistics&id=${videoIds.join(
+    ","
+  )}&key=${getApiKey()}`;
+  const detailsRes = await fetch(detailsUrl);
+  if (!detailsRes.ok) throw new Error(`YouTube videos.list 실패 (${detailsRes.status})`);
+  const detailsData = (await detailsRes.json()) as { items?: YoutubeApiVideoItem[] };
+
+  return (detailsData.items || []).map((item) => ({
+    videoId: item.id || "",
+    title: item.snippet?.title || "",
+    description: item.snippet?.description || "",
+    channelTitle: item.snippet?.channelTitle || "",
+    thumbnailUrl: pickThumbnail(item.snippet?.thumbnails),
+    viewCount: Number(item.statistics?.viewCount || 0),
+    publishedAt: item.snippet?.publishedAt || "",
+  }));
+}

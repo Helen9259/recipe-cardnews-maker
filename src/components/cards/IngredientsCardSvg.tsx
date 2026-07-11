@@ -2,6 +2,7 @@ import { CardNewsCard } from "@/types/card";
 import { CardStyle } from "@/types/recipe";
 import { CardCanvas } from "./CardCanvas";
 import { CardHtml } from "./CardHtml";
+import { PhotoBackgroundOverlay, PhotoTopHalf, TOP_HALF_CONTENT_Y_OFFSET } from "./PhotoOverlay";
 import { getLine, getLines } from "@/lib/cardLines";
 import { FONT_FAMILY_STACK } from "@/lib/fontOptions";
 import { autoFontSize } from "@/lib/autoFontSize";
@@ -16,7 +17,7 @@ function columnCount(itemCount: number): number {
 }
 
 export function IngredientsCardSvg({ card, style }: { card: CardNewsCard; style: CardStyle }) {
-  const fontFamily = FONT_FAMILY_STACK[style.font];
+  const fontFamily = FONT_FAMILY_STACK[style.mainFont];
   const title = getLine(card, "title");
   const subtitle = getLine(card, "subtitle");
   const items = getLines(card, "body");
@@ -25,16 +26,27 @@ export function IngredientsCardSvg({ card, style }: { card: CardNewsCard; style:
   const longestItem = items.reduce((longest, item) => (item.text.length > longest.length ? item.text : longest), "");
   const itemFontSize = autoFontSize(longestItem, ITEM_FONT_SIZE);
 
+  const hasPhoto = Boolean(card.imageUrl) && Boolean(card.photoLayout);
+  const isBackground = hasPhoto && card.photoLayout === "background";
+  const isTopHalf = hasPhoto && card.photoLayout === "top-half";
+  const boxY = isTopHalf ? TOP_HALF_CONTENT_Y_OFFSET : 80;
+  const boxHeight = isTopHalf ? CARD_HEIGHT - TOP_HALF_CONTENT_Y_OFFSET - 40 : CARD_HEIGHT - 160;
+  const textColor = (fallback: string) => (isBackground ? "#ffffff" : fallback);
+  const subtextColor = (fallback: string) => (isBackground ? "#f5f5f5" : fallback);
+
   return (
     <CardCanvas mode={style.mode} mainColor={style.mainColor}>
-      <CardHtml x={64} y={80} width={CARD_WIDTH - 128} height={CARD_HEIGHT - 160}>
+      {isBackground && card.imageUrl && <PhotoBackgroundOverlay imageUrl={card.imageUrl} gradientId="ingredients-gradient" />}
+      {isTopHalf && card.imageUrl && <PhotoTopHalf imageUrl={card.imageUrl} />}
+
+      <CardHtml x={64} y={boxY} width={CARD_WIDTH - 128} height={boxHeight}>
         <div style={{ display: "flex", flexDirection: "column", height: "100%", fontFamily }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 16 }}>
             {title?.text && (
-              <span style={{ fontSize: 48, fontWeight: 800, color: title.color }}>{title.text}</span>
+              <span style={{ fontSize: 48, fontWeight: 800, color: textColor(title.color) }}>{title.text}</span>
             )}
             {subtitle?.text && (
-              <span style={{ fontSize: 24, fontWeight: 400, color: subtitle.color }}>{subtitle.text}</span>
+              <span style={{ fontSize: 24, fontWeight: 400, color: subtextColor(subtitle.color) }}>{subtitle.text}</span>
             )}
           </div>
 
@@ -59,7 +71,7 @@ export function IngredientsCardSvg({ card, style }: { card: CardNewsCard; style:
                     flexShrink: 0,
                   }}
                 />
-                <span style={{ fontSize: itemFontSize, fontWeight: 300, color: item.color, wordBreak: "keep-all" }}>
+                <span style={{ fontSize: itemFontSize, fontWeight: 300, color: textColor(item.color), wordBreak: "keep-all" }}>
                   {item.text}
                 </span>
               </div>

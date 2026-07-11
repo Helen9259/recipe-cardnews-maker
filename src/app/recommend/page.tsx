@@ -6,18 +6,9 @@ import { PageShell } from "@/components/layout/PageShell";
 import { AiLoadingIndicator } from "@/components/layout/AiLoadingIndicator";
 import { Button } from "@/components/ui/Button";
 import { useAppSession } from "@/context/AppSessionContext";
-import { CardNewsProject, RecommendedRecipe } from "@/types/recipe";
+import { RecommendedRecipe } from "@/types/recipe";
 import { RecommendationCandidate } from "@/types/recommendation";
-
-function buildDefaultProject(recipe: RecommendedRecipe): CardNewsProject {
-  const { title, sourceType, sourceUrl, sourceName, thumbnailUrl, servings, ingredients, steps } = recipe;
-  return {
-    recipe: { title, sourceType, sourceUrl, sourceName, thumbnailUrl, servings, ingredients, steps },
-    style: { mode: "light", mainColor: "butter", font: "pretendard" },
-    instaAccountName: "",
-    promoText: "",
-  };
-}
+import { buildDefaultProject } from "@/lib/defaultProject";
 
 export default function RecommendPage() {
   const router = useRouter();
@@ -26,6 +17,8 @@ export default function RecommendPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
+  const [searchInput, setSearchInput] = useState("");
+  const [searchActive, setSearchActive] = useState(false);
 
   // videoId -> 이미 분석된(Gemini 호출 완료) 결과 캐시. 같은 후보를 다시 클릭해도 재호출하지 않는다.
   const [analyzed, setAnalyzed] = useState<Record<string, RecommendedRecipe>>({});
@@ -34,19 +27,21 @@ export default function RecommendPage() {
   const analyzeRequestId = useRef(0);
   const inFlightVideoId = useRef<string | null>(null);
 
-  const fetchCandidates = useCallback(async () => {
+  const fetchCandidates = useCallback(async (query?: string) => {
     setLoading(true);
     setError(null);
     setSelectedIdx(null);
     setAnalyzed({});
     setAnalyzeError(null);
     try {
-      const res = await fetch("/api/recommend-recipes");
+      const url = query ? `/api/recommend-recipes?q=${encodeURIComponent(query)}` : "/api/recommend-recipes";
+      const res = await fetch(url);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "추천 레시피를 가져오지 못했습니다.");
       setCandidates(data as RecommendationCandidate[]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다.");
+      setCandidates([]);
     } finally {
       setLoading(false);
     }
@@ -55,6 +50,23 @@ export default function RecommendPage() {
   useEffect(() => {
     fetchCandidates();
   }, [fetchCandidates]);
+
+  function handleSearch() {
+    const q = searchInput.trim();
+    if (!q) return;
+    setSearchActive(true);
+    fetchCandidates(q);
+  }
+
+  function handleResetSearch() {
+    setSearchInput("");
+    setSearchActive(false);
+    fetchCandidates();
+  }
+
+  function handleRetry() {
+    fetchCandidates(searchActive ? searchInput.trim() : undefined);
+  }
 
   // 후보를 고를 때만 Gemini 분석(카테고리 분류 + 레시피 구조화)을 지연 호출한다.
   async function handleSelect(idx: number) {
@@ -100,23 +112,45 @@ export default function RecommendPage() {
 
   return (
     <PageShell step={state.currentStep}>
-      <div className="flex items-center justify-between pb-6">
+      <div className="flex items-center justify-between pb-4">
         <h1 className="text-lg font-semibold text-neutral-800">AI 추천 레시피</h1>
-        {!loading && (
-          <Button variant="secondary" onClick={fetchCandidates}>
+        {!loading && !searchActive && (
+          <Button variant="secondary" onClick={() => fetchCandidates()}>
             다시 리서치
+          </Button>
+        )}
+      </div>
+
+      <div className="flex items-center gap-2 pb-6">
+        <input
+          type="text"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+          placeholder="요리 이름으로 검색"
+          className="flex-1 rounded-lg border border-neutral-200 px-4 py-2.5 text-sm text-neutral-800 outline-none focus:border-neutral-800"
+        />
+        <Button variant="secondary" onClick={handleSearch}>
+          검색
+        </Button>
+        {searchActive && (
+          <Button variant="secondary" onClick={handleResetSearch}>
+            추천으로 돌아가기
           </Button>
         )}
       </div>
 
       {loading ? (
         <div className="flex justify-center">
-          <AiLoadingIndicator label="인기 영상을 검색하고 있어요" estimatedSeconds={8} />
+          <AiLoadingIndicator
+            label={searchActive ? "검색 중이에요" : "인기 영상을 검색하고 있어요"}
+            estimatedSeconds={8}
+          />
         </div>
       ) : error ? (
         <div className="flex flex-col items-center gap-3 py-16 text-center">
           <p className="text-sm text-red-500">{error}</p>
-          <Button variant="secondary" onClick={fetchCandidates}>
+          <Button variant="secondary" onClick={handleRetry}>
             다시 시도
           </Button>
         </div>

@@ -2,85 +2,46 @@ import { CardNewsCard } from "@/types/card";
 import { CardStyle } from "@/types/recipe";
 import { CardCanvas } from "./CardCanvas";
 import { CardHtml } from "./CardHtml";
+import { PhotoBackgroundOverlay, PhotoTopHalf, TOP_HALF_CONTENT_Y_OFFSET } from "./PhotoOverlay";
 import { getLine } from "@/lib/cardLines";
 import { FONT_FAMILY_STACK } from "@/lib/fontOptions";
 import { getDarkModeTokens } from "@/lib/darkMode";
 import { autoFontSize } from "@/lib/autoFontSize";
-import { CARD_WIDTH, ILLUSTRATION_ASPECT } from "@/lib/cardLayout";
+import { CARD_WIDTH, CARD_HEIGHT } from "@/lib/cardLayout";
 
-const PADDING = 64;
-const ILLUSTRATION_WIDTH = CARD_WIDTH - PADDING * 2;
-const ILLUSTRATION_HEIGHT = ILLUSTRATION_WIDTH / ILLUSTRATION_ASPECT;
-
-const BODY_FONT_SIZE = { min: 32, max: 44, idealChars: 20 };
+const BODY_FONT_SIZE = { min: 36, max: 52, idealChars: 20 };
 const TIP_FONT_SIZE = { min: 24, max: 30, idealChars: 22 };
 
 export function StepsCardSvg({ card, style }: { card: CardNewsCard; style: CardStyle }) {
-  const fontFamily = FONT_FAMILY_STACK[style.font];
+  const mainFontFamily = FONT_FAMILY_STACK[style.mainFont];
+  const tipFontFamily = FONT_FAMILY_STACK[style.tipFont];
   const tokens = getDarkModeTokens(style.mode);
   const stepNumber = getLine(card, "subtitle");
   const body = getLine(card, "body");
   const tip = getLine(card, "tip");
 
+  const hasPhoto = Boolean(card.imageUrl) && Boolean(card.photoLayout);
+  const isBackground = hasPhoto && card.photoLayout === "background";
+  const isTopHalf = hasPhoto && card.photoLayout === "top-half";
+  const boxY = isTopHalf ? TOP_HALF_CONTENT_Y_OFFSET : 80;
+  const boxHeight = isTopHalf ? CARD_HEIGHT - TOP_HALF_CONTENT_Y_OFFSET - 40 : CARD_HEIGHT - 160;
+  const textColor = (fallback: string) => (isBackground ? "#ffffff" : fallback);
+  const dividerColor = isBackground ? "rgba(255,255,255,0.35)" : tokens.cardBorder;
+
   return (
     <CardCanvas mode={style.mode} mainColor={style.mainColor}>
-      <CardHtml x={PADDING} y={70} width={ILLUSTRATION_WIDTH} height={ILLUSTRATION_HEIGHT}>
-        {card.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={card.imageUrl}
-            alt=""
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "contain",
-            }}
-          />
-        ) : card.illustrationFailed ? (
-          <div
-            style={{
-              width: "100%",
-              height: "100%",
-              borderRadius: 24,
-              border: "2px dashed #e0483e",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontFamily,
-              fontSize: 20,
-              color: "#e0483e",
-              textAlign: "center",
-              padding: 16,
-              boxSizing: "border-box",
-            }}
-          >
-            삽화 생성 실패
-          </div>
-        ) : (
-          <div
-            style={{
-              width: "100%",
-              height: "100%",
-              borderRadius: 24,
-              border: `2px dashed var(--card-accent-color)`,
-            }}
-          />
-        )}
-      </CardHtml>
+      {isBackground && card.imageUrl && <PhotoBackgroundOverlay imageUrl={card.imageUrl} gradientId="steps-gradient" />}
+      {isTopHalf && card.imageUrl && <PhotoTopHalf imageUrl={card.imageUrl} />}
 
-      <CardHtml
-        x={PADDING}
-        y={70 + ILLUSTRATION_HEIGHT + 48}
-        width={ILLUSTRATION_WIDTH}
-        height={420}
-      >
-        <div style={{ display: "flex", flexDirection: "column", gap: 16, fontFamily }}>
+      <CardHtml x={64} y={boxY} width={CARD_WIDTH - 128} height={boxHeight}>
+        <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", height: "100%", gap: 20 }}>
           {stepNumber?.text && (
             <span
               style={{
                 display: "inline-block",
                 width: "fit-content",
-                fontSize: 24,
+                fontFamily: mainFontFamily,
+                fontSize: 26,
                 fontWeight: 700,
                 color: "var(--card-accent-color)",
                 letterSpacing: 1,
@@ -92,10 +53,11 @@ export function StepsCardSvg({ card, style }: { card: CardNewsCard; style: CardS
           {body?.text && (
             <span
               style={{
+                fontFamily: mainFontFamily,
                 fontSize: autoFontSize(body.text, BODY_FONT_SIZE),
                 fontWeight: 300,
                 lineHeight: 1.4,
-                color: body.color,
+                color: textColor(body.color),
                 wordBreak: "keep-all",
               }}
             >
@@ -106,10 +68,11 @@ export function StepsCardSvg({ card, style }: { card: CardNewsCard; style: CardS
             <span
               style={{
                 marginTop: 8,
+                fontFamily: tipFontFamily,
                 fontSize: autoFontSize(tip.text, TIP_FONT_SIZE),
                 fontWeight: 400,
-                color: tip.color,
-                borderTop: `1px solid ${tokens.cardBorder}`,
+                color: textColor(tip.color),
+                borderTop: `1px solid ${dividerColor}`,
                 paddingTop: 12,
               }}
             >

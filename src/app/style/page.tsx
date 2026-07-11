@@ -20,13 +20,15 @@ export default function StylePage() {
 
   const [mode, setMode] = useState<ColorMode>(project?.style.mode ?? "light");
   const [mainColor, setMainColor] = useState<MainColor>(project?.style.mainColor ?? "butter");
-  const [font, setFont] = useState<FontOption>(project?.style.font ?? "pretendard");
+  const [mainFont, setMainFont] = useState<FontOption>(project?.style.mainFont ?? "pretendard");
+  const [tipFont, setTipFont] = useState<FontOption>(project?.style.tipFont ?? "pretendard");
+  const [photoMode, setPhotoMode] = useState(project?.style.photoMode ?? false);
   const [instaAccountName, setInstaAccountName] = useState(project?.instaAccountName ?? "");
   const [promoText, setPromoText] = useState(project?.promoText ?? "");
 
   if (!project) return null;
 
-  const previewStyle: CardStyle = { mode, mainColor, font };
+  const previewStyle: CardStyle = { mode, mainColor, mainFont, tipFont, photoMode };
   const previewCard = buildBaseCards({
     ...project,
     style: previewStyle,
@@ -80,24 +82,61 @@ export default function StylePage() {
             </div>
           </section>
 
-          <section className="flex flex-col gap-3">
-            <label className="text-sm font-medium text-neutral-800">폰트</label>
-            <div className="flex flex-col gap-2">
-              {FONT_OPTION_ORDER.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => setFont(option)}
-                  className={[
-                    "rounded-lg border px-4 py-3 text-left text-base transition-colors",
-                    FONT_OPTION_META[option].className,
-                    font === option ? "border-neutral-800 bg-neutral-50" : "border-neutral-200 hover:border-neutral-400",
-                  ].join(" ")}
-                >
-                  {FONT_OPTION_META[option].label}
-                </button>
-              ))}
+          <section className="grid grid-cols-2 gap-6">
+            <div className="flex flex-col gap-3">
+              <label className="text-sm font-medium text-neutral-800">메인 폰트</label>
+              <p className="-mt-2 text-xs text-neutral-500">제목/본문에 적용돼요</p>
+              <div className="flex flex-col gap-2">
+                {FONT_OPTION_ORDER.map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => setMainFont(option)}
+                    className={[
+                      "rounded-lg border px-4 py-3 text-left text-base transition-colors",
+                      FONT_OPTION_META[option].className,
+                      mainFont === option
+                        ? "border-neutral-800 bg-neutral-50"
+                        : "border-neutral-200 hover:border-neutral-400",
+                    ].join(" ")}
+                  >
+                    {FONT_OPTION_META[option].label}
+                  </button>
+                ))}
+              </div>
             </div>
+
+            <div className="flex flex-col gap-3">
+              <label className="text-sm font-medium text-neutral-800">팁 폰트</label>
+              <p className="-mt-2 text-xs text-neutral-500">TIP 텍스트에만 적용돼요</p>
+              <div className="flex flex-col gap-2">
+                {FONT_OPTION_ORDER.map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => setTipFont(option)}
+                    className={[
+                      "rounded-lg border px-4 py-3 text-left text-base transition-colors",
+                      FONT_OPTION_META[option].className,
+                      tipFont === option
+                        ? "border-neutral-800 bg-neutral-50"
+                        : "border-neutral-200 hover:border-neutral-400",
+                    ].join(" ")}
+                  >
+                    {FONT_OPTION_META[option].label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section className="flex flex-col gap-3">
+            <label className="text-sm font-medium text-neutral-800">사진 모드</label>
+            <p className="-mt-2 text-xs text-neutral-500">
+              켜면 재료 카드와 순서 카드를 기존처럼 분리해서 만들어요. 끄면(기본값) 재료+순서를 한 장으로
+              압축해서 보여줘요.
+            </p>
+            <Toggle checked={photoMode} onChange={setPhotoMode} labelOff="끔 (통합 카드)" labelOn="켬 (분리 카드)" />
           </section>
 
           <section className="grid grid-cols-2 gap-4">

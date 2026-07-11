@@ -21,10 +21,8 @@ export type FontOption =
 export interface RecipeStep {
   id: string;
   text: string;
-  /** 있으면 카드 하단에 인라인 표시 */
+  /** 있으면 카드 하단(또는 재료+순서 통합 카드에서는 인라인)에 표시 */
   tip?: string;
-  /** Cloudflare Workers AI 생성 결과(4:3 가로형) or 사용자 업로드 */
-  illustrationUrl?: string;
 }
 
 export interface Recipe {
@@ -45,7 +43,12 @@ export interface Recipe {
 export interface CardStyle {
   mode: ColorMode;
   mainColor: MainColor;
-  font: FontOption;
+  /** 제목/본문에 적용되는 폰트 */
+  mainFont: FontOption;
+  /** 팁 텍스트에만 적용되는 폰트 */
+  tipFont: FontOption;
+  /** 프로젝트 전체 단위 토글. 기본 꺼짐(false) — 켜면 재료/순서 카드를 기존처럼 분리해서 생성 */
+  photoMode: boolean;
 }
 
 export interface CardNewsProject {

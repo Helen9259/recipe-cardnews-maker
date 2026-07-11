@@ -9,7 +9,7 @@
 - Next.js 14 (App Router) + TypeScript + Tailwind CSS
 - 카드 렌더링: React 컴포넌트로 구성한 SVG (`foreignObject` 기반 텍스트 레이아웃)
 - PNG 내보내기: `html-to-image`로 canvas rasterize, SVG는 DOM의 `<svg>`를 그대로 직렬화해서 다운로드
-- 외부 API(Gemini/YouTube/Cloudflare)는 전부 서버(API Route)에서만 호출하고 클라이언트에 키를 노출하지 않음
+- 외부 API(Gemini/YouTube)는 전부 서버(API Route)에서만 호출하고 클라이언트에 키를 노출하지 않음
 
 ## 로컬 개발
 
@@ -30,9 +30,7 @@ npm run dev
 | 변수 | 용도 | 발급처 |
 | --- | --- | --- |
 | `GEMINI_API_KEY` | 레시피 텍스트/영상 구조화, 추천 레시피 카테고리 분류 | [Google AI Studio](https://aistudio.google.com/) |
-| `YOUTUBE_API_KEY` | 영상 설명/댓글 조회, 인기 레시피 검색 | [Google Cloud Console](https://console.cloud.google.com/)에서 YouTube Data API v3 사용 설정 후 발급 |
-| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare Workers AI 계정 ID | Cloudflare 대시보드 우측 사이드바 |
-| `CLOUDFLARE_API_TOKEN` | Workers AI 실행 권한이 있는 API 토큰 | Cloudflare 대시보드 > My Profile > API Tokens |
+| `YOUTUBE_API_KEY` | 영상 설명/댓글 조회, 인기 레시피 검색, 공식 썸네일 URL 조회 | [Google Cloud Console](https://console.cloud.google.com/)에서 YouTube Data API v3 사용 설정 후 발급 |
 
 `GEMINI_MODEL` 환경변수로 사용할 Gemini 모델명을 바꿀 수 있습니다 (기본값 `gemini-2.5-flash`).
 
@@ -87,7 +85,7 @@ in-memory Map으로 memoize한다. 진행 중인 요청과 같은 키가 다시 
 ## Vercel 배포
 
 1. GitHub 저장소를 Vercel 프로젝트로 import
-2. Vercel 프로젝트 설정 > Environment Variables에 위 4개 값을 동일하게 등록
+2. Vercel 프로젝트 설정 > Environment Variables에 위 값들을 동일하게 등록
    (Production/Preview/Development 모두 등록 권장)
 3. 별도 빌드 설정 없이 기본 `next build`로 배포됨
 4. 배포 후 발급되는 도메인으로 접속 (데스크톱 브라우저 권장)
@@ -105,21 +103,11 @@ in-memory Map으로 memoize한다. 진행 중인 요청과 같은 키가 다시 
 - **SVG 다운로드 폰트**: PNG는 브라우저에서 그대로 렌더링해 캡처하므로 항상 정확한 폰트로 나오지만,
   SVG를 파일로 내려받아 다른 프로그램(브라우저 외)에서 열면 폰트 파일이 내장되어 있지 않아
   시스템에 해당 폰트가 없을 경우 대체 서체로 보일 수 있습니다.
-- **삽화 배경 제거**: Cloudflare Workers AI(`@cf/black-forest-labs/flux-1-schnell`)는 알파 투명
-  배경을 직접 생성하지 못해서, "simple white background"로 생성한 뒤 `src/app/api/generate-illustration/route.ts`의
-  `removeWhiteBackground`가 sharp로 흰색에 가까운 픽셀을 알파 처리해 투명하게 만듭니다. 완벽한 배경
-  제거 API는 아니라서 재료 자체에 흰 디테일이 있으면 일부 투명해질 수 있습니다.
-- **삽화 색상**: 이제 컬러 일러스트라 다크모드에서 별도 반전 처리 없이 재료 고유색 그대로
-  양쪽 모드에 표시됩니다. 메인 컬러(포인트 컬러)는 삽화에는 적용되지 않고 텍스트/워터마크/UI
-  강조 요소에만 쓰입니다.
-- **삽화 프롬프트 언어**: 조리 단계 문구(한국어)를 번역하지 않고 그대로 프롬프트에 넣습니다(번역을
-  위해 Gemini를 추가로 호출하면 할당량이 늘어나기 때문). 이미지 생성 모델의 한국어 이해도가
-  완벽하지 않아 가끔 의도한 장면과 다르게 나올 수 있습니다.
-- **flux-1-schnell 입력 스키마**: `prompt`/`steps`/`seed`만 지원하고 `negative_prompt`·`width`·`height`가
-  없습니다(SDXL과 다름). 제외하고 싶은 요소는 프롬프트 문장 안에 "no X" 형태로 넣고, 생성되는
-  이미지 비율도 모델이 정하는 대로 나옵니다 — 카드의 삽화 영역은 `object-fit: contain`으로
-  렌더링해서 어떤 비율이 와도 잘리지 않고 자연스럽게 들어갑니다.
-- **서버리스 함수 타임아웃**: Gemini 요청 큐(최소 13초 간격) 때문에 `/api/recommend-recipes`는
+- **표지 이미지**: 유튜브 소스는 공식 썸네일 URL(`maxres`/`high`/`default` 중 있는 것)만 사용하고
+  영상 프레임을 직접 캡처하지 않습니다. 블로그 소스는 이미지 없이 블로그명+원문 링크 텍스트만
+  표시합니다. 사용자가 직접 업로드한 사진은 `FileReader`로 data URL로 변환해 세션 상태에만
+  저장되고 서버로는 전송되지 않습니다.
+- **서버리스 함수 타임아웃**: Gemini 요청 큐(최소 13초 간격) 때문에 `/api/recommend-recipes/select`는
   1~2분 가까이 걸릴 수 있습니다. Vercel Hobby 플랜은 함수 실행시간이 60초로 강제 상한되어 있어
   타임아웃이 날 수 있으니, Pro 플랜(최대 300초)을 쓰거나 `RESULT_COUNT`(추천 개수)를 줄이는 걸
   권장합니다.
