@@ -8,7 +8,7 @@ import { FONT_FAMILY_STACK } from "@/lib/fontOptions";
 import { autoFontSize } from "@/lib/autoFontSize";
 import { CARD_WIDTH, CARD_HEIGHT } from "@/lib/cardLayout";
 
-const TITLE_FONT_SIZE = { min: 46, max: 74, idealChars: 10 };
+const TITLE_FONT_SIZE = { min: 66, max: 94, idealChars: 10 };
 const SUBTITLE_FONT_SIZE = { min: 30, max: 36, idealChars: 16 };
 
 /**
