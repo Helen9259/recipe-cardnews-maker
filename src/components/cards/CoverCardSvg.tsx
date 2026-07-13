@@ -13,8 +13,10 @@ import { CARD_WIDTH, CARD_HEIGHT } from "@/lib/cardLayout";
 const TITLE_FONT_SIZE = { min: 66, max: 94, idealChars: 10 };
 const SUBTITLE_FONT_SIZE = { min: 30, max: 36, idealChars: 16 };
 const WATERMARK_FONT_SIZE = 38;
-// 사진이 세로로 아무리 길어도 이 높이를 넘지 않게 잡아, 아래 텍스트 영역을 항상 확보한다
-const IMAGE_MAX_HEIGHT = 780;
+// 유튜브 썸네일은 16:9(맥스레스, 세로 약 608px)나 4:3(썸네일 API 폴백, 세로 810px)로 오는데
+// 어느 쪽이든 가로 폭 100%로 꽉 차게 나오도록, 4:3 기준 필요 높이보다 넉넉하게 잡는다.
+// 이 값을 넘는 세로로 긴 사진(주로 사용자 업로드)만 letterbox 처리되어 폭이 줄어든다.
+const IMAGE_MAX_HEIGHT = 860;
 
 /**
  * 표지 카드는 3가지 버전 중 하나로 렌더링된다 (card.coverImageMode):
