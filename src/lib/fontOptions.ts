@@ -35,3 +35,13 @@ export const FONT_FAMILY_STACK: Record<FontOption, string> = {
   dosgothic: '"DOSGothic", sans-serif',
   cocochoitoon: '"Cocochoitoon", cursive',
 };
+
+/** @font-face에 등록된 실제 font-family 이름 (PNG 내보내기에서 폰트를 직접 찾아 내장할 때 사용) */
+export const FONT_FAMILY_NAME: Record<FontOption, string> = {
+  pretendard: "Pretendard Variable",
+  notosans: "Noto Sans KR",
+  okaydandan: "Okay Dandan",
+  ggubulrim: "Ggubulrim",
+  dosgothic: "DOSGothic",
+  cocochoitoon: "Cocochoitoon",
+};

@@ -10,6 +10,8 @@ import { useAppSession } from "@/context/AppSessionContext";
 import { useRequireProject } from "@/lib/useRequireProject";
 import { toggleCardSelected } from "@/lib/cardEngine";
 import { getCardLabel } from "@/lib/cardLabels";
+import { FONT_FAMILY_NAME } from "@/lib/fontOptions";
+import { buildFontEmbedCSS } from "@/lib/fontEmbedCss";
 
 type ExportFormat = "png" | "svg";
 
@@ -32,10 +34,22 @@ export default function ExportPage() {
   const [format, setFormat] = useState<ExportFormat>("png");
   const [downloading, setDownloading] = useState(false);
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const fontEmbedCSSRef = useRef<string | null>(null);
 
   if (!project) return null;
 
   const cards = project.cards ?? [];
+
+  /** 프로젝트에서 실제로 쓰는 폰트만 base64로 내장한 CSS를 만든다 (다운로드 세션 동안 한 번만 계산해 재사용) */
+  async function getFontEmbedCSS(): Promise<string> {
+    if (fontEmbedCSSRef.current !== null) return fontEmbedCSSRef.current;
+    const familyNames = Array.from(
+      new Set([FONT_FAMILY_NAME[project!.style.mainFont], FONT_FAMILY_NAME[project!.style.tipFont]])
+    );
+    const css = await buildFontEmbedCSS(familyNames);
+    fontEmbedCSSRef.current = css;
+    return css;
+  }
 
   function handleToggle(cardId: string) {
     updateProject((prev) => ({ ...prev, cards: toggleCardSelected(prev.cards ?? [], cardId) }));
@@ -54,7 +68,8 @@ export default function ExportPage() {
     const filename = `${String(index + 1).padStart(2, "0")}-${kind}.${format}`;
 
     if (format === "png") {
-      const dataUrl = await toPng(node, { pixelRatio: 2, cacheBust: true });
+      const fontEmbedCSS = await getFontEmbedCSS();
+      const dataUrl = await toPng(node, { pixelRatio: 2, cacheBust: true, fontEmbedCSS });
       triggerDownload(dataUrl, filename);
       return;
     }
