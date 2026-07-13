@@ -6,6 +6,7 @@ import { PhotoBackgroundOverlay, PhotoTopHalf, TOP_HALF_CONTENT_Y_OFFSET } from 
 import { getLine } from "@/lib/cardLines";
 import { FONT_FAMILY_STACK } from "@/lib/fontOptions";
 import { getDarkModeTokens } from "@/lib/darkMode";
+import { getPaleMainColor, getMainColorHex } from "@/lib/cardColors";
 import { autoFontSize } from "@/lib/autoFontSize";
 import { CARD_WIDTH, CARD_HEIGHT } from "@/lib/cardLayout";
 
@@ -17,6 +18,9 @@ export function StepsCardSvg({ card, style }: { card: CardNewsCard; style: CardS
   const mainFontFamily = FONT_FAMILY_STACK[style.mainFont];
   const tipFontFamily = FONT_FAMILY_STACK[style.tipFont];
   const tokens = getDarkModeTokens(style.mode);
+  // 순서 카드는 포인트 컬러를 옅게 희석한 색을 배경으로, 원래 포인트 컬러는 STEP 라벨 등에 쓴다
+  const background = getPaleMainColor(style.mainColor);
+  const accent = getMainColorHex(style.mainColor);
   const stepNumber = getLine(card, "subtitle");
   const body = getLine(card, "body");
   const tip = getLine(card, "tip");
@@ -30,7 +34,7 @@ export function StepsCardSvg({ card, style }: { card: CardNewsCard; style: CardS
   const dividerColor = isBackground ? "rgba(255,255,255,0.35)" : tokens.divider;
 
   return (
-    <CardCanvas mode={style.mode} mainColor={style.mainColor}>
+    <CardCanvas mode={style.mode} mainColor={style.mainColor} background={background}>
       {isBackground && card.imageUrl && <PhotoBackgroundOverlay imageUrl={card.imageUrl} gradientId="steps-gradient" />}
       {isTopHalf && card.imageUrl && <PhotoTopHalf imageUrl={card.imageUrl} />}
 
@@ -44,7 +48,7 @@ export function StepsCardSvg({ card, style }: { card: CardNewsCard; style: CardS
                 fontFamily: mainFontFamily,
                 fontSize: 36,
                 fontWeight: 700,
-                color: textColor(tokens.text),
+                color: accent,
                 letterSpacing: 1,
               }}
             >

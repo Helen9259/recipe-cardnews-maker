@@ -5,6 +5,7 @@ import { CardHtml } from "./CardHtml";
 import { PhotoBackgroundOverlay, PhotoTopHalf, TOP_HALF_CONTENT_Y_OFFSET } from "./PhotoOverlay";
 import { getLine, getLines } from "@/lib/cardLines";
 import { FONT_FAMILY_STACK } from "@/lib/fontOptions";
+import { getPaleMainColor } from "@/lib/cardColors";
 import { fitMultilineFontSize } from "@/lib/autoFontSize";
 import { CARD_WIDTH, CARD_HEIGHT } from "@/lib/cardLayout";
 
@@ -17,6 +18,8 @@ const TITLE_BLOCK_HEIGHT = 90;
 /** 재료+순서 통합 카드가 내용 초과로 분할될 때, 순서만 모아서 보여주는 카드 */
 export function StepsListCardSvg({ card, style }: { card: CardNewsCard; style: CardStyle }) {
   const fontFamily = FONT_FAMILY_STACK[style.mainFont];
+  // 재료/순서 카드와 동일하게 포인트 컬러를 옅게 희석한 색을 배경으로 쓴다
+  const background = getPaleMainColor(style.mainColor);
   const title = getLine(card, "title");
   const steps = getLines(card, "step");
 
@@ -42,7 +45,7 @@ export function StepsListCardSvg({ card, style }: { card: CardNewsCard; style: C
   );
 
   return (
-    <CardCanvas mode={style.mode} mainColor={style.mainColor}>
+    <CardCanvas mode={style.mode} mainColor={style.mainColor} background={background}>
       {isBackground && card.imageUrl && <PhotoBackgroundOverlay imageUrl={card.imageUrl} gradientId="stepslist-gradient" />}
       {isTopHalf && card.imageUrl && <PhotoTopHalf imageUrl={card.imageUrl} />}
 

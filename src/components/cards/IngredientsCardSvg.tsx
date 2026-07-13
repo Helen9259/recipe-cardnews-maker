@@ -5,7 +5,7 @@ import { CardHtml } from "./CardHtml";
 import { PhotoBackgroundOverlay, PhotoTopHalf, TOP_HALF_CONTENT_Y_OFFSET } from "./PhotoOverlay";
 import { getLine, getLines } from "@/lib/cardLines";
 import { FONT_FAMILY_STACK } from "@/lib/fontOptions";
-import { getDarkModeTokens } from "@/lib/darkMode";
+import { getPaleMainColor, getMainColorHex } from "@/lib/cardColors";
 import { autoFontSize } from "@/lib/autoFontSize";
 import { CARD_WIDTH, CARD_HEIGHT } from "@/lib/cardLayout";
 
@@ -35,7 +35,9 @@ function fitItemFontSize(itemCount: number, cols: number, availableHeight: numbe
 
 export function IngredientsCardSvg({ card, style }: { card: CardNewsCard; style: CardStyle }) {
   const fontFamily = FONT_FAMILY_STACK[style.mainFont];
-  const tokens = getDarkModeTokens(style.mode);
+  // 재료 카드는 포인트 컬러를 옅게 희석한 색을 배경으로, 원래 포인트 컬러는 불릿 같은 텍스트류에 쓴다
+  const background = getPaleMainColor(style.mainColor);
+  const accent = getMainColorHex(style.mainColor);
   const title = getLine(card, "title");
   const subtitle = getLine(card, "subtitle");
   const items = getLines(card, "body");
@@ -56,7 +58,7 @@ export function IngredientsCardSvg({ card, style }: { card: CardNewsCard; style:
   const itemFontSize = fitItemFontSize(items.length, cols, gridAvailableHeight, byLength);
 
   return (
-    <CardCanvas mode={style.mode} mainColor={style.mainColor}>
+    <CardCanvas mode={style.mode} mainColor={style.mainColor} background={background}>
       {isBackground && card.imageUrl && <PhotoBackgroundOverlay imageUrl={card.imageUrl} gradientId="ingredients-gradient" />}
       {isTopHalf && card.imageUrl && <PhotoTopHalf imageUrl={card.imageUrl} />}
 
@@ -89,7 +91,7 @@ export function IngredientsCardSvg({ card, style }: { card: CardNewsCard; style:
                     width: 10,
                     height: 10,
                     borderRadius: 999,
-                    background: textColor(tokens.text),
+                    background: accent,
                     flexShrink: 0,
                   }}
                 />

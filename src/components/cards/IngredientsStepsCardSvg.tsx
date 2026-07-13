@@ -5,7 +5,7 @@ import { CardHtml } from "./CardHtml";
 import { PhotoBackgroundOverlay, PhotoTopHalf, TOP_HALF_CONTENT_Y_OFFSET } from "./PhotoOverlay";
 import { getLine, getLines } from "@/lib/cardLines";
 import { FONT_FAMILY_STACK } from "@/lib/fontOptions";
-import { getDarkModeTokens } from "@/lib/darkMode";
+import { getPaleMainColor, getMainColorHex } from "@/lib/cardColors";
 import { autoFontSize, fitMultilineFontSize } from "@/lib/autoFontSize";
 import { CARD_WIDTH, CARD_HEIGHT } from "@/lib/cardLayout";
 
@@ -24,7 +24,9 @@ function columnCount(itemCount: number): number {
 /** 사진 모드가 꺼져있을 때(기본값) 재료+순서를 한 장에 압축해서 보여주는 카드 */
 export function IngredientsStepsCardSvg({ card, style }: { card: CardNewsCard; style: CardStyle }) {
   const fontFamily = FONT_FAMILY_STACK[style.mainFont];
-  const tokens = getDarkModeTokens(style.mode);
+  // 재료+순서 카드는 포인트 컬러를 옅게 희석한 색을 배경으로, 원래 포인트 컬러는 불릿/구분선에 쓴다
+  const background = getPaleMainColor(style.mainColor);
+  const accent = getMainColorHex(style.mainColor);
   const title = getLine(card, "title");
   const ingredients = getLines(card, "ingredient");
   const steps = getLines(card, "step");
@@ -59,7 +61,7 @@ export function IngredientsStepsCardSvg({ card, style }: { card: CardNewsCard; s
   );
 
   return (
-    <CardCanvas mode={style.mode} mainColor={style.mainColor}>
+    <CardCanvas mode={style.mode} mainColor={style.mainColor} background={background}>
       {isBackground && card.imageUrl && <PhotoBackgroundOverlay imageUrl={card.imageUrl} gradientId="merged-gradient" />}
       {isTopHalf && card.imageUrl && <PhotoTopHalf imageUrl={card.imageUrl} />}
 
@@ -78,13 +80,13 @@ export function IngredientsStepsCardSvg({ card, style }: { card: CardNewsCard; s
                 rowGap: 14,
                 alignContent: "start",
                 paddingBottom: 16,
-                borderBottom: `1px solid ${isBackground ? "rgba(255,255,255,0.35)" : tokens.divider}`,
+                borderBottom: `1px solid ${isBackground ? "rgba(255,255,255,0.35)" : accent}`,
               }}
             >
               {ingredients.map((item) => (
                 <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span
-                    style={{ width: 8, height: 8, borderRadius: 999, background: textColor(tokens.text), flexShrink: 0 }}
+                    style={{ width: 8, height: 8, borderRadius: 999, background: accent, flexShrink: 0 }}
                   />
                   <span style={{ fontSize: ingredientFontSize, fontWeight: 300, color: textColor(item.color), wordBreak: "keep-all" }}>
                     {item.text}
