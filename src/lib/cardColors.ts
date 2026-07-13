@@ -24,7 +24,12 @@ export const MAIN_COLOR_ORDER: MainColor[] = [
   "blue",
 ];
 
+/** 메인 컬러의 순수 hex 값 (배경으로도, 포인트 텍스트 컬러로도 쓰인다) */
+export function getMainColorHex(mainColor: MainColor): string {
+  return MAIN_COLOR_HEX[mainColor].hex;
+}
+
 /** 카드뉴스 본문 배경색으로 그대로 쓰인다 (모드와 무관, 사용자가 고른 색 그대로) */
 export function getCardBackgroundColor(mainColor: MainColor): string {
-  return MAIN_COLOR_HEX[mainColor].hex;
+  return getMainColorHex(mainColor);
 }

@@ -30,3 +30,11 @@ export function getDarkModeTokens(mode: ColorMode): DarkModeTokens {
     divider: "rgba(38,38,38,0.25)",
   };
 }
+
+/**
+ * 표지 카드는 배경을 메인 컬러로 채우지 않고 화이트/다크 모드 그대로 유지한다.
+ * (포인트 컬러는 표지 제목 등 텍스트에만 쓰인다)
+ */
+export function getModeBackgroundColor(mode: ColorMode): string {
+  return mode === "dark" ? "#1c1c1c" : "#ffffff";
+}

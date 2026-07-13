@@ -5,6 +5,8 @@ import { CardHtml } from "./CardHtml";
 import { toProxiedImageUrl } from "@/lib/imageProxy";
 import { getLine, getLines } from "@/lib/cardLines";
 import { FONT_FAMILY_STACK } from "@/lib/fontOptions";
+import { getMainColorHex } from "@/lib/cardColors";
+import { getModeBackgroundColor } from "@/lib/darkMode";
 import { autoFontSize } from "@/lib/autoFontSize";
 import { CARD_WIDTH, CARD_HEIGHT } from "@/lib/cardLayout";
 
@@ -26,10 +28,15 @@ export function CoverCardSvg({ card, style }: { card: CardNewsCard; style: CardS
   const subtitle = getLine(card, "subtitle");
   const watermark = getLine(card, "watermark");
   const hasImage = card.coverImageMode !== "none" && Boolean(card.imageUrl);
+  // 표지는 배경을 메인 컬러로 채우지 않고 화이트/다크 모드 그대로 유지한다.
+  // 포인트 컬러(메인 컬러)는 제목 등 텍스트와, 이미지 없는 버전의 옅은 배경 톤에만 쓰인다.
+  const background = getModeBackgroundColor(style.mode);
+  const accent = getMainColorHex(style.mainColor);
 
   if (!hasImage) {
     return (
-      <CardCanvas mode={style.mode} mainColor={style.mainColor}>
+      <CardCanvas mode={style.mode} mainColor={style.mainColor} background={background}>
+        <rect x={0} y={0} width={CARD_WIDTH} height={CARD_HEIGHT} fill={accent} opacity={0.22} />
         {watermark?.text && (
           <CardHtml x={0} y={56} width={CARD_WIDTH} height={60}>
             <div style={{ textAlign: "center", fontFamily, fontSize: WATERMARK_FONT_SIZE, fontWeight: 600, color: watermark.color }}>
@@ -80,7 +87,7 @@ export function CoverCardSvg({ card, style }: { card: CardNewsCard; style: CardS
   const src = toProxiedImageUrl(card.imageUrl);
 
   return (
-    <CardCanvas mode={style.mode} mainColor={style.mainColor}>
+    <CardCanvas mode={style.mode} mainColor={style.mainColor} background={background}>
       <CardHtml x={0} y={0} width={CARD_WIDTH} height={CARD_HEIGHT}>
         <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}

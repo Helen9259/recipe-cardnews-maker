@@ -2,6 +2,7 @@ import { v4 as uuid } from "uuid";
 import { CardNewsCard, CardLine, CoverImageMode, PhotoLayout } from "@/types/card";
 import { CardNewsProject, Recipe, RecipeStep } from "@/types/recipe";
 import { getDarkModeTokens, DarkModeTokens } from "@/lib/darkMode";
+import { getMainColorHex } from "@/lib/cardColors";
 import { splitTitleForTwoTone } from "@/lib/titleSplit";
 
 function line(role: CardLine["role"], text: string, color: string): CardLine {
@@ -21,11 +22,12 @@ function formatBlogSourceLine(recipe: Recipe): string {
 function buildCoverCard(project: CardNewsProject): CardNewsCard {
   const { recipe, style, instaAccountName } = project;
   const tokens = getDarkModeTokens(style.mode);
+  const accent = getMainColorHex(style.mainColor);
 
-  // 제목이 길면 읽기 좋게 단어 경계로 두 줄로 나눈다 (색은 둘 다 기본 텍스트색 — 배경이
-  // 이제 메인 컬러라 별도 포인트 컬러를 텍스트에 또 쓰면 배경과 뒤섞여 안 보일 수 있다)
+  // 표지는 배경이 화이트/다크로 고정이라, 제목이 두 줄이면 첫 줄은 기본 텍스트색,
+  // 둘째 줄은 포인트 컬러(메인 컬러)를 기본값으로 준다 (편집 화면에서 줄별로 바꿀 수 있음).
   const titleSegments = splitTitleForTwoTone(recipe.title);
-  const titleLines = titleSegments.map((segment) => line("title", segment, tokens.text));
+  const titleLines = titleSegments.map((segment, idx) => line("title", segment, idx === 0 ? tokens.text : accent));
 
   const subtitleText =
     recipe.sourceType === "blog"
