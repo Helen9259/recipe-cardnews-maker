@@ -9,7 +9,8 @@ import { getDarkModeTokens } from "@/lib/darkMode";
 import { autoFontSize } from "@/lib/autoFontSize";
 import { CARD_WIDTH, CARD_HEIGHT } from "@/lib/cardLayout";
 
-const BODY_FONT_SIZE = { min: 46, max: 62, idealChars: 20 };
+// 순서 설명 텍스트는 길이와 무관하게 고정 크기: 넘치면 폰트를 줄이지 않고 줄바꿈한다
+const BODY_FONT_SIZE = 52;
 const TIP_FONT_SIZE = { min: 34, max: 40, idealChars: 22 };
 
 export function StepsCardSvg({ card, style }: { card: CardNewsCard; style: CardStyle }) {
@@ -26,7 +27,7 @@ export function StepsCardSvg({ card, style }: { card: CardNewsCard; style: CardS
   const boxY = isTopHalf ? TOP_HALF_CONTENT_Y_OFFSET : 80;
   const boxHeight = isTopHalf ? CARD_HEIGHT - TOP_HALF_CONTENT_Y_OFFSET - 40 : CARD_HEIGHT - 160;
   const textColor = (fallback: string) => (isBackground ? "#ffffff" : fallback);
-  const dividerColor = isBackground ? "rgba(255,255,255,0.35)" : tokens.cardBorder;
+  const dividerColor = isBackground ? "rgba(255,255,255,0.35)" : tokens.divider;
 
   return (
     <CardCanvas mode={style.mode} mainColor={style.mainColor}>
@@ -43,7 +44,7 @@ export function StepsCardSvg({ card, style }: { card: CardNewsCard; style: CardS
                 fontFamily: mainFontFamily,
                 fontSize: 36,
                 fontWeight: 700,
-                color: "var(--card-accent-color)",
+                color: textColor(tokens.text),
                 letterSpacing: 1,
               }}
             >
@@ -54,7 +55,7 @@ export function StepsCardSvg({ card, style }: { card: CardNewsCard; style: CardS
             <span
               style={{
                 fontFamily: mainFontFamily,
-                fontSize: autoFontSize(body.text, BODY_FONT_SIZE),
+                fontSize: BODY_FONT_SIZE,
                 fontWeight: 300,
                 lineHeight: 1.4,
                 color: textColor(body.color),

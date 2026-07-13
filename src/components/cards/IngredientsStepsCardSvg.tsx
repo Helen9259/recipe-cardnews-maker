@@ -5,12 +5,15 @@ import { CardHtml } from "./CardHtml";
 import { PhotoBackgroundOverlay, PhotoTopHalf, TOP_HALF_CONTENT_Y_OFFSET } from "./PhotoOverlay";
 import { getLine, getLines } from "@/lib/cardLines";
 import { FONT_FAMILY_STACK } from "@/lib/fontOptions";
-import { autoFontSize } from "@/lib/autoFontSize";
+import { getDarkModeTokens } from "@/lib/darkMode";
+import { autoFontSize, fitMultilineFontSize } from "@/lib/autoFontSize";
 import { CARD_WIDTH, CARD_HEIGHT } from "@/lib/cardLayout";
 
 // 재료+순서가 한 카드에 다 들어가야 해서(사진 모드 꺼짐), 각각 단독 카드보다 밀도를 높인다
 const ITEM_FONT_SIZE = { min: 30, max: 38, idealChars: 8 };
-const STEP_FONT_SIZE = { min: 32, max: 42, idealChars: 26 };
+// 순서 설명 텍스트는 개별 항목 길이가 아니라 전체 분량 기준으로 하나의 고정 크기를 쓴다
+const STEP_MAX_FONT = 40;
+const STEP_MIN_FONT = 22;
 
 function columnCount(itemCount: number): number {
   if (itemCount <= 4) return 1;
@@ -21,6 +24,7 @@ function columnCount(itemCount: number): number {
 /** 사진 모드가 꺼져있을 때(기본값) 재료+순서를 한 장에 압축해서 보여주는 카드 */
 export function IngredientsStepsCardSvg({ card, style }: { card: CardNewsCard; style: CardStyle }) {
   const fontFamily = FONT_FAMILY_STACK[style.mainFont];
+  const tokens = getDarkModeTokens(style.mode);
   const title = getLine(card, "title");
   const ingredients = getLines(card, "ingredient");
   const steps = getLines(card, "step");
@@ -34,6 +38,25 @@ export function IngredientsStepsCardSvg({ card, style }: { card: CardNewsCard; s
   const boxY = isTopHalf ? TOP_HALF_CONTENT_Y_OFFSET : 72;
   const boxHeight = isTopHalf ? CARD_HEIGHT - TOP_HALF_CONTENT_Y_OFFSET - 40 : CARD_HEIGHT - 144;
   const textColor = (fallback: string) => (isBackground ? "#ffffff" : fallback);
+
+  // 순서 목록에 남는 공간 = 전체 박스 - 제목 - 재료 그리드(대략치) - 사이 간격(gap 28 x 개수)
+  const ingredientRows = ingredients.length > 0 ? Math.ceil(ingredients.length / cols) : 0;
+  const ingredientsBlockHeight = ingredientRows > 0 ? ingredientRows * ingredientFontSize * 1.7 + 16 : 0;
+  const titleBlockHeight = title?.text ? 60 : 0;
+  const blockCount = (title?.text ? 1 : 0) + (ingredients.length > 0 ? 1 : 0);
+  const stepsAvailableHeight = Math.max(0, boxHeight - titleBlockHeight - ingredientsBlockHeight - blockCount * 28);
+  const stepFontSize = fitMultilineFontSize(
+    steps.map((s) => s.text),
+    {
+      maxFontSize: STEP_MAX_FONT,
+      minFontSize: STEP_MIN_FONT,
+      availableWidth: CARD_WIDTH - 128,
+      availableHeight: stepsAvailableHeight,
+      lineHeightRatio: 1.4,
+      gapPx: 16,
+      charWidthRatio: 0.85,
+    }
+  );
 
   return (
     <CardCanvas mode={style.mode} mainColor={style.mainColor}>
@@ -55,13 +78,13 @@ export function IngredientsStepsCardSvg({ card, style }: { card: CardNewsCard; s
                 rowGap: 14,
                 alignContent: "start",
                 paddingBottom: 16,
-                borderBottom: `1px solid ${isBackground ? "rgba(255,255,255,0.35)" : "var(--card-accent-color)"}`,
+                borderBottom: `1px solid ${isBackground ? "rgba(255,255,255,0.35)" : tokens.divider}`,
               }}
             >
               {ingredients.map((item) => (
                 <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span
-                    style={{ width: 8, height: 8, borderRadius: 999, background: "var(--card-accent-color)", flexShrink: 0 }}
+                    style={{ width: 8, height: 8, borderRadius: 999, background: textColor(tokens.text), flexShrink: 0 }}
                   />
                   <span style={{ fontSize: ingredientFontSize, fontWeight: 300, color: textColor(item.color), wordBreak: "keep-all" }}>
                     {item.text}
@@ -71,12 +94,12 @@ export function IngredientsStepsCardSvg({ card, style }: { card: CardNewsCard; s
             </div>
           )}
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16, overflow: "hidden" }}>
             {steps.map((step) => (
               <span
                 key={step.id}
                 style={{
-                  fontSize: autoFontSize(step.text, STEP_FONT_SIZE),
+                  fontSize: stepFontSize,
                   fontWeight: 300,
                   lineHeight: 1.4,
                   color: textColor(step.color),

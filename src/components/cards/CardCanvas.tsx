@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { ColorMode, MainColor } from "@/types/recipe";
-import { getDarkModeTokens } from "@/lib/darkMode";
-import { getCardAccentColor } from "@/lib/cardColors";
+import { getCardBackgroundColor } from "@/lib/cardColors";
 import { CARD_WIDTH, CARD_HEIGHT } from "@/lib/cardLayout";
 
 interface CardCanvasProps {
@@ -11,12 +10,11 @@ interface CardCanvasProps {
 }
 
 /**
- * 모든 카드 컴포넌트의 SVG 루트. --card-accent-color는 이 svg 내부 <style>에만
- * 정의되어 있어 SVG 파일을 단독으로 내려받아도(사이트 CSS 없이) 그대로 렌더링된다.
+ * 모든 카드 컴포넌트의 SVG 루트. 배경은 사용자가 고른 메인 컬러 그대로 채운다.
+ * mode(화이트/다크)는 배경이 아니라 각 카드 컴포넌트가 텍스트 색 계산에 쓴다(getDarkModeTokens).
  */
-export function CardCanvas({ mode, mainColor, children }: CardCanvasProps) {
-  const tokens = getDarkModeTokens(mode);
-  const accent = getCardAccentColor(mainColor, mode);
+export function CardCanvas({ mainColor, children }: CardCanvasProps) {
+  const background = getCardBackgroundColor(mainColor);
 
   return (
     <svg
@@ -25,9 +23,9 @@ export function CardCanvas({ mode, mainColor, children }: CardCanvasProps) {
       viewBox={`0 0 ${CARD_WIDTH} ${CARD_HEIGHT}`}
       xmlns="http://www.w3.org/2000/svg"
       className="block h-auto w-full"
+      style={{ overflow: "hidden" }}
     >
-      <style>{`:root { --card-accent-color: ${accent}; }`}</style>
-      <rect width={CARD_WIDTH} height={CARD_HEIGHT} fill={tokens.background} />
+      <rect width={CARD_WIDTH} height={CARD_HEIGHT} fill={background} />
       {children}
     </svg>
   );

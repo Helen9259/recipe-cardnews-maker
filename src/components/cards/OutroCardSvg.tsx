@@ -5,6 +5,7 @@ import { CardHtml } from "./CardHtml";
 import { PhotoBackgroundOverlay, PhotoTopHalf, TOP_HALF_CONTENT_Y_OFFSET } from "./PhotoOverlay";
 import { getLine } from "@/lib/cardLines";
 import { FONT_FAMILY_STACK } from "@/lib/fontOptions";
+import { getDarkModeTokens } from "@/lib/darkMode";
 import { autoFontSize } from "@/lib/autoFontSize";
 import { CARD_WIDTH, CARD_HEIGHT } from "@/lib/cardLayout";
 
@@ -13,6 +14,7 @@ const PROMO_FONT_SIZE = { min: 36, max: 46, idealChars: 20 };
 
 export function OutroCardSvg({ card, style }: { card: CardNewsCard; style: CardStyle }) {
   const fontFamily = FONT_FAMILY_STACK[style.mainFont];
+  const tokens = getDarkModeTokens(style.mode);
   const account = getLine(card, "title");
   const promo = getLine(card, "body");
 
@@ -30,7 +32,7 @@ export function OutroCardSvg({ card, style }: { card: CardNewsCard; style: CardS
       {isBackground && card.imageUrl && <PhotoBackgroundOverlay imageUrl={card.imageUrl} gradientId="outro-gradient" />}
       {isTopHalf && card.imageUrl && <PhotoTopHalf imageUrl={card.imageUrl} />}
       {!hasPhoto && (
-        <circle cx={CARD_WIDTH / 2} cy={CARD_HEIGHT / 2 - 120} r={140} fill="var(--card-accent-color)" opacity={0.25} />
+        <circle cx={CARD_WIDTH / 2} cy={CARD_HEIGHT / 2 - 120} r={140} fill={tokens.text} opacity={0.12} />
       )}
 
       <CardHtml x={80} y={contentY} width={CARD_WIDTH - 160} height={contentHeight}>

@@ -1,4 +1,4 @@
-export type CardKind = "cover" | "ingredients" | "steps" | "ingredientsSteps" | "outro";
+export type CardKind = "cover" | "ingredients" | "steps" | "ingredientsSteps" | "stepsList" | "outro";
 
 export type CardLineRole = "title" | "subtitle" | "body" | "tip" | "watermark" | "ingredient" | "step";
 

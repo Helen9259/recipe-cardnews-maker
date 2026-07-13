@@ -2,7 +2,6 @@ import { v4 as uuid } from "uuid";
 import { CardNewsCard, CardLine, CoverImageMode, PhotoLayout } from "@/types/card";
 import { CardNewsProject, Recipe, RecipeStep } from "@/types/recipe";
 import { getDarkModeTokens, DarkModeTokens } from "@/lib/darkMode";
-import { getCardAccentColor } from "@/lib/cardColors";
 import { splitTitleForTwoTone } from "@/lib/titleSplit";
 
 function line(role: CardLine["role"], text: string, color: string): CardLine {
@@ -22,13 +21,11 @@ function formatBlogSourceLine(recipe: Recipe): string {
 function buildCoverCard(project: CardNewsProject): CardNewsCard {
   const { recipe, style, instaAccountName } = project;
   const tokens = getDarkModeTokens(style.mode);
-  const accent = getCardAccentColor(style.mainColor, style.mode);
 
-  // 제목이 두 줄로 나뉠 만큼 길면 첫 줄은 기본 텍스트색, 둘째 줄은 메인 컬러를 기본값으로 준다.
+  // 제목이 길면 읽기 좋게 단어 경계로 두 줄로 나눈다 (색은 둘 다 기본 텍스트색 — 배경이
+  // 이제 메인 컬러라 별도 포인트 컬러를 텍스트에 또 쓰면 배경과 뒤섞여 안 보일 수 있다)
   const titleSegments = splitTitleForTwoTone(recipe.title);
-  const titleLines = titleSegments.map((segment, idx) =>
-    line("title", segment, idx === 0 ? tokens.text : accent)
-  );
+  const titleLines = titleSegments.map((segment) => line("title", segment, tokens.text));
 
   const subtitleText =
     recipe.sourceType === "blog"
@@ -98,25 +95,36 @@ function shouldSplitMergedCard(ingredients: string[], steps: RecipeStep[]): bool
   return totalChars > MERGE_CHAR_THRESHOLD || totalItems > MERGE_ITEM_THRESHOLD;
 }
 
-function buildOneMergedCard(
-  id: string,
-  title: string,
-  ingredients: string[],
-  steps: RecipeStep[],
-  stepNumberOffset: number,
-  tokens: DarkModeTokens
-): CardNewsCard {
-  const lines: CardLine[] = [line("title", title, tokens.text)];
+function buildOneMergedCard(ingredients: string[], steps: RecipeStep[], tokens: DarkModeTokens): CardNewsCard {
+  const lines: CardLine[] = [line("title", "재료+순서", tokens.text)];
   ingredients.forEach((ingredient) => lines.push(line("ingredient", ingredient, tokens.text)));
   steps.forEach((step, idx) => {
-    const number = stepNumberOffset + idx + 1;
+    const number = idx + 1;
     const text = step.tip ? `${number}. ${step.text} (TIP. ${step.tip})` : `${number}. ${step.text}`;
     lines.push(line("step", text, tokens.text));
   });
 
   return {
-    id,
+    id: "merged",
     kind: "ingredientsSteps",
+    selected: true,
+    stepIds: steps.map((s) => s.id),
+    lines,
+  };
+}
+
+/** 내용 초과로 통합 카드가 안 들어갈 때: 재료 카드 1장 + 순서만 모은 카드 1장으로 분리한다 */
+function buildStepsListCard(steps: RecipeStep[], tokens: DarkModeTokens): CardNewsCard {
+  const lines: CardLine[] = [line("title", "순서", tokens.text)];
+  steps.forEach((step, idx) => {
+    const number = idx + 1;
+    const text = step.tip ? `${number}. ${step.text} (TIP. ${step.tip})` : `${number}. ${step.text}`;
+    lines.push(line("step", text, tokens.text));
+  });
+
+  return {
+    id: "stepsList",
+    kind: "stepsList",
     selected: true,
     stepIds: steps.map((s) => s.id),
     lines,
@@ -125,22 +133,15 @@ function buildOneMergedCard(
 
 /**
  * 사진 모드가 꺼져있을 때: 재료+순서를 카드 1장에 통합한다.
- * 내용량(글자수 또는 항목수)이 기준을 넘으면 "재료+순서 1/2" / "재료+순서 2/2"로 자동 분할한다.
- * 분할 시 재료는 1페이지에만 넣고, 2페이지는 남은 순서만 이어서 보여준다.
+ * 내용량(글자수 또는 항목수)이 기준을 넘으면 "재료 카드" + "순서 카드"로 컴포넌트 단위 분리한다
+ * (재료 카드는 사진 모드일 때와 동일한 컴포넌트를 재사용).
  */
 function buildMergedCards(recipe: Recipe, tokens: DarkModeTokens): CardNewsCard[] {
   if (!shouldSplitMergedCard(recipe.ingredients, recipe.steps)) {
-    return [buildOneMergedCard("merged", "재료+순서", recipe.ingredients, recipe.steps, 0, tokens)];
+    return [buildOneMergedCard(recipe.ingredients, recipe.steps, tokens)];
   }
 
-  const mid = Math.ceil(recipe.steps.length / 2);
-  const firstSteps = recipe.steps.slice(0, mid);
-  const secondSteps = recipe.steps.slice(mid);
-
-  return [
-    buildOneMergedCard("merged-1", "재료+순서 1/2", recipe.ingredients, firstSteps, 0, tokens),
-    buildOneMergedCard("merged-2", "재료+순서 2/2", [], secondSteps, mid, tokens),
-  ];
+  return [buildIngredientsCard(recipe, tokens), buildStepsListCard(recipe.steps, tokens)];
 }
 
 function buildOutroCard(project: CardNewsProject, tokens: DarkModeTokens): CardNewsCard {

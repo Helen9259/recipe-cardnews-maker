@@ -59,12 +59,8 @@ export default function StylePage() {
           </div>
 
           <section className="flex flex-col gap-3">
-            <label className="text-sm font-medium text-neutral-800">모드</label>
-            <Toggle checked={mode === "dark"} onChange={(dark) => setMode(dark ? "dark" : "light")} labelOff="화이트" labelOn="다크" />
-          </section>
-
-          <section className="flex flex-col gap-3">
             <label className="text-sm font-medium text-neutral-800">메인 컬러</label>
+            <p className="-mt-2 text-xs text-neutral-500">카드뉴스 배경색으로 그대로 쓰여요.</p>
             <div className="flex flex-wrap gap-3">
               {MAIN_COLOR_ORDER.map((color) => (
                 <button
@@ -76,10 +72,18 @@ export default function StylePage() {
                     "h-10 w-10 rounded-full border-2 transition-transform",
                     mainColor === color ? "scale-110 border-neutral-800" : "border-transparent",
                   ].join(" ")}
-                  style={{ backgroundColor: MAIN_COLOR_HEX[color][mode] }}
+                  style={{ backgroundColor: MAIN_COLOR_HEX[color].hex }}
                 />
               ))}
             </div>
+          </section>
+
+          <section className="flex flex-col gap-3">
+            <label className="text-sm font-medium text-neutral-800">모드</label>
+            <p className="-mt-2 text-xs text-neutral-500">
+              배경색이 아니라 텍스트 색을 정해요. 화이트=어두운 텍스트, 다크=밝은 텍스트.
+            </p>
+            <Toggle checked={mode === "dark"} onChange={(dark) => setMode(dark ? "dark" : "light")} labelOff="화이트" labelOn="다크" />
           </section>
 
           <section className="grid grid-cols-2 gap-6">
