@@ -7,9 +7,15 @@
 const MAX_ENTRIES = 50;
 const cache = new Map<string, Promise<unknown>>();
 
-export function getOrCompute<T>(key: string, compute: () => Promise<T>): Promise<T> {
-  const existing = cache.get(key);
-  if (existing) return existing as Promise<T>;
+export function getOrCompute<T>(key: string, compute: () => Promise<T>, options?: { force?: boolean }): Promise<T> {
+  if (options?.force) {
+    // "다시 분석하기"처럼 사용자가 명시적으로 새로 계산을 요청한 경우, 기존 캐시를 버리고
+    // 새로 계산해서 그 결과로 캐시를 덮어쓴다 (이후 요청은 다시 이 새 결과를 재사용)
+    cache.delete(key);
+  } else {
+    const existing = cache.get(key);
+    if (existing) return existing as Promise<T>;
+  }
 
   const promise = compute().catch((err) => {
     // 실패한 요청은 캐시에 남겨두지 않아야 다음에 다시 시도할 수 있다

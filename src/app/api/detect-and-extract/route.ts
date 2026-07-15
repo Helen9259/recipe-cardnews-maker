@@ -11,7 +11,7 @@ export const maxDuration = 60;
 
 export async function POST(request: Request) {
   try {
-    const { url } = (await request.json()) as { url?: string };
+    const { url, force } = (await request.json()) as { url?: string; force?: boolean };
     if (!url || typeof url !== "string") {
       return NextResponse.json({ error: "url이 필요합니다." }, { status: 400 });
     }
@@ -38,8 +38,10 @@ export async function POST(request: Request) {
 
       // 같은 영상을 다시 제출하거나(뒤로가기 후 재시도) 더블클릭으로 중복 제출해도
       // Gemini를 다시 부르지 않고 진행 중이거나 끝난 결과를 재사용한다
-      const recipe = await getOrCompute(`extract:youtube:${videoId}`, () =>
-        structureRecipeFromYoutubeDetails(details, parsedUrl.toString())
+      const recipe = await getOrCompute(
+        `extract:youtube:${videoId}`,
+        () => structureRecipeFromYoutubeDetails(details, parsedUrl.toString()),
+        { force }
       );
       return NextResponse.json(recipe);
     }
@@ -53,12 +55,15 @@ export async function POST(request: Request) {
       );
     }
 
-    const recipe = await getOrCompute(`extract:blog:${parsedUrl.toString()}`, () =>
-      structureRecipeFromText(text, {
-        sourceType: "blog",
-        sourceUrl: parsedUrl.toString(),
-        sourceName: blogName,
-      })
+    const recipe = await getOrCompute(
+      `extract:blog:${parsedUrl.toString()}`,
+      () =>
+        structureRecipeFromText(text, {
+          sourceType: "blog",
+          sourceUrl: parsedUrl.toString(),
+          sourceName: blogName,
+        }),
+      { force }
     );
 
     return NextResponse.json(recipe);
