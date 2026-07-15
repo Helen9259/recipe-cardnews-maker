@@ -12,7 +12,7 @@ import {
  * 1차: 설명란 → 2차: 댓글 보강 → 3차: 그래도 부실하면 Gemini가 영상을 직접 분석.
  * 실제 구조화 호출(text/video)만 갈아끼울 수 있게 분리해서 카테고리 포함 버전과 공유한다.
  */
-async function withYoutubeFallback<T>(
+async function withYoutubeFallback<T extends Recipe>(
   details: YoutubeVideoDetails,
   sourceUrl: string,
   structureText: (text: string, meta: RecipeSourceMeta) => Promise<T>,
@@ -32,15 +32,27 @@ async function withYoutubeFallback<T>(
     combinedText = `${details.title}\n\n${details.description}\n\n[댓글]\n${comments}`.trim();
   }
 
+  // Gemini에게 영상을 직접 보여줄 때 넘기는 URL은 반드시 정식 watch URL로 정규화해야 한다 —
+  // 사용자가 붙여넣은 youtu.be 단축 링크나 공유 시 붙는 ?si= 트래킹 파라미터가 그대로 들어가면
+  // Gemini가 영상을 못 찾는 경우가 있었다.
+  const canonicalUrl = youtubeWatchUrl(details.videoId);
+
   if (!isTextTooThin(combinedText)) {
-    return structureText(combinedText, meta);
+    const textResult = await structureText(combinedText, meta);
+    if (textResult.steps.length > 0) return textResult;
+
+    // 글자 수는 충분해도 재료 리스트/홍보 문구뿐이라 실제 조리 순서가 없는 텍스트일 수 있다.
+    // 이런 경우 steps가 빈 채로 나오니, 영상을 직접 분석해서 순서를 보강해본다.
+    try {
+      const videoResult = await structureVideo(canonicalUrl, meta);
+      return videoResult.steps.length > 0 ? videoResult : textResult;
+    } catch (err) {
+      console.warn("[extractRecipe] 순서 보강용 영상 분석 실패, 텍스트 결과를 그대로 사용합니다:", err);
+      return textResult;
+    }
   }
 
-  // 설명란/댓글이 부실하면 Gemini에게 영상을 직접 분석시킨다. 이때 넘기는 URL은 반드시
-  // 정식 watch URL(https://www.youtube.com/watch?v=...)로 정규화해야 한다 — 사용자가
-  // 붙여넣은 youtu.be 단축 링크나 공유 시 붙는 ?si= 트래킹 파라미터가 그대로 들어가면
-  // Gemini가 영상을 못 찾아 추출 자체가 실패하는 경우가 있었다.
-  const canonicalUrl = youtubeWatchUrl(details.videoId);
+  // 설명란/댓글이 애초에 부실하면 처음부터 Gemini에게 영상을 직접 분석시킨다.
   try {
     return await structureVideo(canonicalUrl, meta);
   } catch (err) {
