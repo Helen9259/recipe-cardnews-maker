@@ -32,10 +32,23 @@ async function withYoutubeFallback<T>(
     combinedText = `${details.title}\n\n${details.description}\n\n[댓글]\n${comments}`.trim();
   }
 
-  if (isTextTooThin(combinedText)) {
-    return structureVideo(sourceUrl, meta);
+  if (!isTextTooThin(combinedText)) {
+    return structureText(combinedText, meta);
   }
-  return structureText(combinedText, meta);
+
+  // 설명란/댓글이 부실하면 Gemini에게 영상을 직접 분석시킨다. 이때 넘기는 URL은 반드시
+  // 정식 watch URL(https://www.youtube.com/watch?v=...)로 정규화해야 한다 — 사용자가
+  // 붙여넣은 youtu.be 단축 링크나 공유 시 붙는 ?si= 트래킹 파라미터가 그대로 들어가면
+  // Gemini가 영상을 못 찾아 추출 자체가 실패하는 경우가 있었다.
+  const canonicalUrl = youtubeWatchUrl(details.videoId);
+  try {
+    return await structureVideo(canonicalUrl, meta);
+  } catch (err) {
+    // 영상 분석이 아예 실패하면(비공개/연령제한/영상 길이 제한 등) 완전히 실패하는 대신
+    // 부실하더라도 있는 텍스트(제목 등)로 마지막 시도를 한다
+    console.warn("[extractRecipe] 유튜브 영상 분석 실패, 텍스트 기반으로 재시도합니다:", err);
+    return structureText(combinedText || details.title, meta);
+  }
 }
 
 /** 유튜브 영상 상세정보(설명란)로부터 Recipe를 구조화한다. (detect-and-extract에서 사용) */
